@@ -80,7 +80,7 @@ yum update && yum -y install vim
 
   - To change the font immediately but temporarily:
 
-    ```shel
+    ```shell
     setfont sun12x22 
     ```
     
@@ -89,7 +89,7 @@ yum update && yum -y install vim
 - Make the console quieter
 
   ```shell
-dmesg -D
+  dmesg -D
   ```
 
 <!---other useful softwares: zsh (with plugin) lrzsz-->
