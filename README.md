@@ -2,13 +2,13 @@
 
 ## 1. Prerequisites 
 
-- A Raspberry Pi 3B or alternatively, a PC
-- CentOS image for ARM architecture ([download link](http://mirror.centos.org/altarch/7/isos/armhfp/ ))  or alternatively, the image for your custom architecture ([list of availavle architectures and download links](http://isoredirect.centos.org/))
-- `net-snmp`  source code ([download link](http://www.net-snmp.org/download.html))
+- A Raspberry Pi 3B or alternatively, a PC.
+- CentOS image for ARM architecture ([download link](http://mirror.centos.org/altarch/7/isos/armhfp/ ))  or alternatively, the image for your custom architecture ([list of availavle architectures and download links](http://isoredirect.centos.org/)).
+- `net-snmp`  source code ([download link](http://www.net-snmp.org/download.html)).
 
 In this tutorial, we use `CentOS-Userland-7-armv7hl-RaspberryPI-GNOME-2003-sda1` (which is for Raspberry Pi) and `net-snmp-5.7.3` as the example.
 
-## 2. Prepare the Operation System
+## 2. Prepare the Operating System
 
 ### 2.1 Initialization
 
@@ -86,7 +86,7 @@ yum update && yum -y install vim
     
   - To make it the default option every time the system boots, open `/etc/vconsole.conf` and change `FONT="WHATEVER"` to `FONT="sun12x22"`.
   
-- Make the console quieter
+- Make the console quieter:
 
   ```shell
   dmesg -D
@@ -98,10 +98,10 @@ yum update && yum -y install vim
 
 This tutorial continues, assuming you are the super user. It makes things easy but is **strongly recommended against** in practical deployment.
 
-If you are strict with security and resist taking this risk (which is good), here are some tips for you:
+For those who are strict with security and resist taking this risk (which is good), here are some tips:
 
-- **A lot of** commands need privileges to be run and therefore `sudo` should precede them
-- When `sudo`ing, pay attention to the environment, e.g. (and especially) `$PATH` 
+- **A lot of** commands need privileges to be run and therefore `sudo` should precede them.
+- When `sudo`ing, pay attention to the environment, e.g. (and especially) `$PATH` .
 
 <!--- sudo how to specify PATH? -->
 
@@ -120,7 +120,7 @@ tar -zxvf net-snmp-5.7.3.tar.gz
 cd net-snmp-5.7.3
 ```
 
-We denote the root directory of the source as `$NET-SNMP-SRC-ROOT`.
+We denote the root directory of the source as `${NET-SNMP-SRC-ROOT}`.
 
 Start building the software: 
 
@@ -128,28 +128,44 @@ Start building the software:
 ./configure \
 --with-default-snmp-version="3" \
 --with-sys-contact="Jun WU <junwuhn@sjtu.edu.cn>" \
---with-sys-location="Shanghai" \
+--with-sys-location="Shanghai, China" \
 --with-logfile="/var/log/snmpd.log" \
 --with-persistent-directory="/var/net-snmp" \
-#--prefix=/usr/local/net-snmp
+--prefix="/usr/local/" \
 && make && make install
 ```
 
 <!---agent选项的作用体现在哪？它也没有生成一个初始的snmpd.conf啊？-->
 
-**Explanation:** By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. For each option's meaning, run `configure` without any option and see what it prompts. Modify the value part of these options as you would like to. 
+**Explanation:** By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
+
+For each option's meaning, run `configure` without any option and see what it prompts. Modify the value part in these options if you would like to. 
 
 <!--- or use "--with-defaults"  -->
 
-The option that is commented out specifies the target directory of installation. We denote this directory as `$NET-SNMP-HOME`. In this tutorial, we don't explicitly specify it, and it defaults to `/usr/local`.
+The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET-SNMP-HOME}`. In the command above, we explicitly set `${NET-SNMP-HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute commands later.
 
-Some useful directories and files of `net-snmp`:
+**Important directories and files of `net-snmp`:**
 
-- `${NET-SNMP-HOME}/bin`： SNMP client programs like `snmpget` etc.
-- `${NET-SNMP-HOME}/sbin` `snmpd` etc.
-- `${NET-SNMP-HOME}/share/snmp/mibs` MIB text files 
+- `${NET-SNMP-SRC-ROOT}/agent/mibgroup/`: Source code that handles read/write requests for each management object in MIBs. Examples of native implementations (i.e. for traditional SNMP applications) are given below:
 
-If success...Now you can run the 
+  | File Pathname           | Management Object(s)              |
+  | ----------------------- | --------------------------------- |
+  | `mibII/system_mib.[ch]` | 1.3.6.1.2.1.1 (mib-2.system)      |
+  | `mibII/interfaces.[ch]` | 1.3.6.1.2.1.2  (mib-2.interfaces) |
+  | `mibII/interfaces.[ch]` | 1.3.6.1.2.1.4 (mib-2.ip)          |
+
+  <!---TODO 这些源码要好好研究一下 -->
+
+  The code for your custom MIBs will also be put here.
+
+- `${NET-SNMP-HOME}/bin`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
+
+- `${NET-SNMP-HOME}/sbin/snmpd`: SNMP daemon (server) program
+
+- `${NET-SNMP-HOME}/share/snmp/mibs/*.txt`: MIB files in textual format 
+
+If the installation finishes successfully, Now you can run the 
 
 
 
