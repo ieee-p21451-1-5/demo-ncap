@@ -1,0 +1,13 @@
+# This file should be put under /etc/systemd/system/.
+
+[Unit]
+Description=Check if time is synced
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/root/demo-ncap/sync/check-sync.sh
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
