@@ -2,7 +2,7 @@
 
 [Unit]
 Description=traffic monitoring on SNMP server
-After=multi-user.target
+After=check-sync.service
 
 [Service]
 Type=simple

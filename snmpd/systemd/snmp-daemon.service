@@ -2,7 +2,7 @@
 
 [Unit]
 Description=SNMP daemon
-After=multi-user.target
+After=check-sync.service
 
 [Service]
 Type=simple

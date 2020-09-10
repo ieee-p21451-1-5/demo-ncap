@@ -173,6 +173,8 @@ The last option specifies the target directory of installation, which defaults t
 
 - `${NET-SNMP-HOME}/share/snmp/mibs/*.txt`: MIB files in textual format 
 
+- `${NET-SNMP-HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations. See `man snmp_config` for more information.)
+
 #### Client
 
 Once the installation finishes, you should be able to run: 
@@ -180,6 +182,8 @@ Once the installation finishes, you should be able to run:
 ```shell
 snmpget -v2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
 ```
+
+and see results similar to:
 
 
 
@@ -193,32 +197,36 @@ snmpget -v2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
 
 Make it a `systemd` service
 
-1. Manually create services
-
-```shell
-cd ~root/
-mkdir -p ./demo-ncap/snmpd/logs/ ./demo-ncap/snmpd/scripts/
-cp ${REPO-ROOT}snmpd/scripts/* ./demo-ncap/snmpd/scripts/
-cp ${REPO-ROOT}snmpd/systemd/* /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable snmp-daemon.service snmpd-traffic.service 
-```
-
-
-
-
-
-2. 
-
 ```shell
 cd ~root/
 git clone https://github.com/ieee-p21451-1-5/demo-ncap.git
+cp ./demo-ncap/sync/check-sync.service /etc/systemd/system/
 cp ./demo-ncap/snmpd/systemd/* /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable snmp-daemon.service snmpd-traffic.service 
+systemctl enable check-sync.service snmp-daemon.service snmpd-traffic.service 
 ```
 
 
+
+remove
+
+
+
+/etc/systemd/system/
+
+/etc/systemd/system/default.target.wants/
+
+
+
+create a sync test service
+
+yum -y install ntp
+
+
+
+
+
+git clone 
 
 
 
