@@ -3,7 +3,7 @@
 ## 1. Prerequisites 
 
 - A Raspberry Pi 3B or alternatively, a PC.
-- CentOS image for ARM architecture ([download link](http://mirror.centos.org/altarch/7/isos/armhfp/ ))  or alternatively, the image for your custom architecture ([list of availavle architectures and download links](http://isoredirect.centos.org/)).
+- CentOS image for ARM architecture ([download link](http://mirror.centos.org/altarch/7/isos/armhfp/ ))  or alternatively, the image for your custom architecture ([list of available architectures and download links](http://isoredirect.centos.org/)).
 - `net-snmp`  source code ([download link](http://www.net-snmp.org/download.html)).
 
 In this tutorial, we use `CentOS-Userland-7-armv7hl-RaspberryPI-GNOME-2003-sda1` (which is for Raspberry Pi) and `net-snmp-5.7.3` as the example.
@@ -111,7 +111,7 @@ For those who are strict with security and resist taking this risk (which is goo
 yum -y install gcc file perl-devel perl-Data-Dumper
 ```
 
-### 2.2 Basic installation
+### 2.2 Basic Installation
 
 By *basic*, we mean that the installed SNMP server can only provide traditional network management services. For example, you can ask the server for its ARP cache, or change the behavior of a certain NIC on it.
 
@@ -143,7 +143,9 @@ Start building the software:
 
 <!---agent选项的作用体现在哪？它也没有生成一个初始的snmpd.conf啊？-->
 
-**Explanation:** By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
+Explanation:
+
+By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
 
 For each option's meaning, run `configure` without any option and see what it prompts. Modify the value part in these options if you would like to. 
 
@@ -151,7 +153,7 @@ For each option's meaning, run `configure` without any option and see what it pr
 
 The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET-SNMP-HOME}`. In the command above, we explicitly set `${NET-SNMP-HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute commands later.
 
-**Important directories and files of `net-snmp`:**
+#### Important Directories and Files of `net-snmp`
 
 - `${NET-SNMP-SRC-ROOT}/agent/mibgroup/`: Source code that handles read/write requests for each management object in MIBs. Examples of native implementations (i.e. for traditional SNMP applications) are given below:
 
@@ -184,6 +186,41 @@ snmpget -v2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
 
 
 #### Server
+
+
+
+
+
+Make it a `systemd` service
+
+1. Manually create services
+
+```shell
+cd ~root/
+mkdir -p ./demo-ncap/snmpd/logs/ ./demo-ncap/snmpd/scripts/
+cp ${REPO-ROOT}snmpd/scripts/* ./demo-ncap/snmpd/scripts/
+cp ${REPO-ROOT}snmpd/systemd/* /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable snmp-daemon.service snmpd-traffic.service 
+```
+
+
+
+
+
+2. 
+
+```shell
+cd ~root/
+git clone https://github.com/ieee-p21451-1-5/demo-ncap.git
+cp ./demo-ncap/snmpd/systemd/* /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable snmp-daemon.service snmpd-traffic.service 
+```
+
+
+
+
 
 
 

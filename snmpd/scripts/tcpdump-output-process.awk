@@ -1,6 +1,6 @@
 #! /usr/bin/gawk -f
 
-# This file should be put under /root/snmpd/scripts/.
+# This file should be put under /root/demo-ncap/snmpd/scripts/.
 
 {
 	# Skip the first two lines

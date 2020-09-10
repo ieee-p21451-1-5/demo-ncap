@@ -1,8 +1,8 @@
 #! /bin/bash
 
-# This file should be put under /root/snmpd/scripts/.
+# This file should be put under /root/demo-ncap/snmpd/scripts/.
 
-cd /root/snmpd/
+cd /root/demo-ncap/snmpd/
 tcpdump -l -i any 'udp port 161' 2>&1 | \
-	gawk -f ./scripts/tcpdump_output_process.awk > \
+	gawk -f ./scripts/tcpdump-output-process.awk > \
 	./logs/snmpd-traffic-log-$(date +'%Y%m%d%H%M%S')

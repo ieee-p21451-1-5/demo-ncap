@@ -6,7 +6,7 @@ After=default.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash /root/snmp-daemon.sh
+ExecStart=/bin/bash /root/demo-ncap/snmpd/scripts/snmp-daemon.sh
 
 [Install]
 WantedBy=default.target
