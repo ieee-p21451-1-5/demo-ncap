@@ -72,7 +72,7 @@ ping www.google.com
 yum update && yum -y install vim
 ```
 
-### 2.4 Not mandatory, but helpful settings
+### 2.4 Not Mandatory, but Helpful Settings
 
 - Add a `\l` at some appropriate place inside `\etc\issue` , that prompts which `tty` you are on when trying logging in.
 
@@ -112,6 +112,12 @@ yum -y install gcc file perl-devel perl-Data-Dumper
 ```
 
 ### 2.2 Basic installation
+
+By *basic*, we mean that the installed SNMP server can only provide traditional network management services. For example, you can ask the server for its ARP cache, or change the behavior of a certain NIC on it.
+
+In other words, as this moment, the server cannot provide IEEE P1451 services.  
+
+#### Installation Process
 
 Unpack the source and switch to its root directory:
 
@@ -165,13 +171,59 @@ The last option specifies the target directory of installation, which defaults t
 
 - `${NET-SNMP-HOME}/share/snmp/mibs/*.txt`: MIB files in textual format 
 
-If the installation finishes successfully, Now you can run the 
+#### Client
+
+Once the installation finishes, you should be able to run: 
+
+```shell
+snmpget -v2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
+```
 
 
+
+
+
+#### Server
 
 
 
 ### 2.3 Custom MIBs
+
+
+
+
+
+
+
+## SNMP临时
+
+https://stackoverflow.com/questions/21564/is-there-a-unix-utility-to-prepend-timestamps-to-stdin
+
+创建AWK脚本`snmpd_output_process.awk` ：
+
+```awk
+{
+	if (NR == 1) {
+		print $0 # 针对第一行
+	}
+	else {
+		if ($2 == "TERM")
+			color = 33
+		else
+			color = 34
+		print strftime("%Y/%m/%d %H:%M:%S"), "\033[01;"color"m"$0"\033[00m"; fflush(); 
+	}
+}
+```
+
+创建脚本`snmp-daemon.sh` 
+
+```shell
+#! /bin/bash
+cd /root/
+/usr/local/sbin/snmpd -Lo -af | awk -f ./snmpd_output_process.awk > \
+./snmpd-log-$(date +'%Y%m%d%H%M%S')
+```
 
 
 
