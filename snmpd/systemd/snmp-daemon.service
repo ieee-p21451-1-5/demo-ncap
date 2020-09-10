@@ -2,11 +2,11 @@
 
 [Unit]
 Description=SNMP daemon
-After=default.target
+After=multi-user.target
 
 [Service]
 Type=simple
 ExecStart=/bin/bash /root/demo-ncap/snmpd/scripts/snmp-daemon.sh
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

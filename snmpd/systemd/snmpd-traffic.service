@@ -2,11 +2,11 @@
 
 [Unit]
 Description=traffic monitoring on SNMP server
-After=default.target
+After=multi-user.target
 
 [Service]
 Type=simple
 ExecStart=/bin/bash /root/demo-ncap/snmpd/scripts/snmpd-traffic.sh
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
