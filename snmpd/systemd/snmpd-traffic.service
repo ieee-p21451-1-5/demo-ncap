@@ -1,0 +1,12 @@
+# This file should be put under /etc/systemd/system/.
+
+[Unit]
+Description=traffic monitoring on SNMP server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /root/snmpd/scripts/snmpd-traffic.sh
+
+[Install]
+WantedBy=default.target
