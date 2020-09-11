@@ -30,7 +30,7 @@ Let the system boot into CLI mode automatically the next time:
 systemctl set-default multi-user.target
 ```
 
-Follow the instructions in `~root/README`, run this command:
+Follow the instructions in `/root/README`, run this command:
 
 ```shell
 rootfs-expand
@@ -69,7 +69,7 @@ ping www.google.com
 ### 2.3 Text Editor 
 
 ```shell
-yum update && yum -y install vim
+yum -y update && yum -y install vim
 ```
 
 ### 2.4 Not Mandatory, but Helpful Settings
@@ -126,7 +126,7 @@ tar -zxvf net-snmp-5.7.3.tar.gz
 cd net-snmp-5.7.3
 ```
 
-We denote the root directory of the source as `${NET-SNMP-SRC-ROOT}`.
+We denote the root directory of the source as `${NET_SNMP_SRC_ROOT}`.
 
 Start building the software: 
 
@@ -143,6 +143,8 @@ Start building the software:
 
 <!---agent选项的作用体现在哪？它也没有生成一个初始的snmpd.conf啊？-->
 
+<!---这些选项确实有在起作用，如果snmpd.conf-->
+
 Explanation:
 
 By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
@@ -151,29 +153,29 @@ For each option's meaning, run `configure` without any option and see what it pr
 
 <!--- or use "--with-defaults"  -->
 
-The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET-SNMP-HOME}`. In the command above, we explicitly set `${NET-SNMP-HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute commands later.
+The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET_SNMP_HOME}`. In the command above, we explicitly set `${NET_SNMP_HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute certain commands later.
 
 #### Important Directories and Files of `net-snmp`
 
-- `${NET-SNMP-SRC-ROOT}/agent/mibgroup/`: Source code that handles read/write requests for each management object in MIBs. Examples of native implementations (i.e. for traditional SNMP applications) are given below:
+- `${NET_SNMP_SRC_ROOT}/agent/mibgroup/`: Source code that handles read/write requests for each management object in MIBs. Examples of native implementations (i.e. for traditional SNMP applications) are given below:
 
   | File Pathname           | Management Object(s)              |
   | ----------------------- | --------------------------------- |
   | `mibII/system_mib.[ch]` | 1.3.6.1.2.1.1 (mib-2.system)      |
   | `mibII/interfaces.[ch]` | 1.3.6.1.2.1.2  (mib-2.interfaces) |
-  | `mibII/interfaces.[ch]` | 1.3.6.1.2.1.4 (mib-2.ip)          |
+  | `mibII/ip.[ch]`         | 1.3.6.1.2.1.4 (mib-2.ip)          |
 
   <!---TODO 这些源码要好好研究一下 -->
 
   The code for your custom MIBs will also be put here.
 
-- `${NET-SNMP-HOME}/bin`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
+- `${NET_SNMP_HOME}/bin`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
 
-- `${NET-SNMP-HOME}/sbin/snmpd`: SNMP daemon (server) program
+- `${NET_SNMP_HOME}/sbin/snmpd`: SNMP daemon (server) program
 
-- `${NET-SNMP-HOME}/share/snmp/mibs/*.txt`: MIB files in textual format 
+- `${NET_SNMP_HOME}/share/snmp/mibs/*.txt`: MIB files in textual format 
 
-- `${NET-SNMP-HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations for storing configuration files. See `man snmp_config` for more information.)
+- `${NET_SNMP_HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations for storing configuration files. See `man snmp_config` for more information.)
 
 #### Client
 
@@ -191,7 +193,7 @@ iso.3.6.1.2.1.1.1.0 = STRING: "Greetings from IEEE P21451-1-5 Working Group, Sha
 
 Explanation:
 
-`snmpget` is a program in `net-snmp` that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
+`snmpget` is the program in `net-snmp` package that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
 
 - `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
 - `-c public` set the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings provide bare-bones security in SNMPv1 and SNMPv2.
@@ -200,14 +202,64 @@ Explanation:
 
 #### Server
 
+Let's craft a bare-bones configuration file first.
+
+```shell
+echo -e "rwcommunity\tpublic" > /usr/local/share/snmp/snmpd.conf
+```
+
+**/\* The following contents are still under construction \*/**
+
+**/\* See you soon :) \*/**
+
+<!---snmpd若要运行，至少需要这么一条access control相关的配置-->
+
+The above command creates a configuration file `snmpd.conf` with a single line:
+
+```
+rwcommunity	public
+```
+
+It says that the server will recognize "public" as the [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and allow whoever can provide this string to perform read/write operations using SNMP. We won't dig into the details of SNMP daemon configuration. For those interested, run `man snmpd.conf`, or equivalently, see [the online manual page](http://www.net-snmp.org/docs/man/snmpd.conf.html).
+
+With the configuration file created, we can finally launch the SNMP daemon:
+
+```shell
+snmpd -Lo -af
+```
+
+Explanation:
+
+`snmpd` is the SNMP daemon program in `net-snmp` package that  by default lsends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
+
+On another terminal, 
+
+```shell
+snmpget -v 2c -c public localhost 1.3.6.1.2.1.1.1.0
+```
 
 
 
+```shell
+systemctl disable firewalld
+```
+
+
+
+Your should see a result that is a subset of `uname -a`  output
 
 Make it a `systemd` service
 
+create a sync test service
+
 ```shell
-cd ~root/
+yum -y install git ntp tcpdump
+```
+
+
+
+```shell
+cd /root/
 git clone https://github.com/ieee-p21451-1-5/demo-ncap.git
 cp ./demo-ncap/sync/check-sync.service /etc/systemd/system/
 cp ./demo-ncap/snmpd/systemd/* /etc/systemd/system/
@@ -227,29 +279,8 @@ remove
 
 
 
-create a sync test service
-
-yum -y install ntp
 
 
-
-
-
-git clone 
-
-
-
-
-
-### 2.3 Custom MIBs
-
-
-
-
-
-
-
-## 
 
 
 
@@ -258,6 +289,88 @@ git clone
 
 
 
+### 2.3 Custom MIBs
+
+enterprises  is 1.3.6.1.4
+
+Assuming `${NET_SNMP_HOME}`
+
+```shell
+export NET_SNMP_HOME="/usr/local"
+export NET_SNMP_SRC_ROOT="/root/net-snmp-5.7.3"
+```
+
+```shell
+cp /root/demo-ncap/snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt ${NET_SNMP_HOME}/share/snmp/mibs/
+```
+
+```shell
+snmptranslate -On IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0
+```
+
+```
+.1.3.6.1.4.1.7934.1451.2.2.0
+```
+
+
+
+```shell
+snmptranslate -Tp IEEE-P1451-SIMPLE-DEMO-MIB::sjtu
+```
+
+```
++--sjtu(7934)
+   |
+   +--ieeeP1451Project(1451)
+      |
+      +--ieeeP1451Sensor(1)
+      |  |
+      |  +-- -R-- String    seTemperature(1)
+      |  |        Textual Convention: DisplayString
+      |  |        Size: 0..255
+      |  +-- -R-- String    sePressure(2)
+      |           Textual Convention: DisplayString
+      |           Size: 0..255
+      |
+      +--ieeeP1451Actuator(2)
+         |
+         +-- -RW- Integer32 acRelay(1)
+         +-- -RW- Integer32 acLed(2)
+```
+
+<!---验证过了-->
+
+```shell
+cd /root/demo-ncap/snmpd/tmp/
+mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
+```
+
+2 - 1
+
+mib2c -c mib2c.scalar.conf IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
+
+ieeeP1451Project.c  ieeeP1451Project.h
+
+
+
+
+
+
+
+mv p21451Project.* net-snmp-5.7.3/agent/mibgroup
+
+--with-mib-modules=p21451Project
+
+snmpget -v1 -c public localhost P21451-TEST-MIB::sePressure.0
+
+
+
+## X. Troubleshooting
+
+- `Error opening specified endpoint` is prompted when trying running
+
+- 权限是否足够？`sudo`
+- 是否有进程占用？`ps aux | grep <port>`
 
 
 
