@@ -1,0 +1,56 @@
+IEEE-P1451-SIMPLE-DEMO-MIB DEFINITIONS ::= BEGIN
+ 
+IMPORTS
+	enterprises		FROM RFC1155-SMI
+	Integer32, OBJECT-TYPE	FROM SNMPv2-SMI
+	DisplayString		FROM SNMPv2-TC;
+
+sjtu			OBJECT IDENTIFIER ::= { enterprises 7934 }
+
+ieeeP1451Project	OBJECT IDENTIFIER ::= { sjtu 1451 }
+
+ieeeP1451Sensor		OBJECT IDENTIFIER ::= { ieeeP1451Project 1 }
+
+ieeeP1451Actuator	OBJECT IDENTIFIER ::= { ieeeP1451Project 2 }
+
+--
+-- sensors
+--
+
+seTemperature	OBJECT-TYPE
+	SYNTAX		DisplayString
+	MAX-ACCESS	read-only
+	STATUS		current
+	DESCRIPTION	
+		"The output value of a temperature sensor (in degree Celsius)."
+	::= { ieeeP1451Sensor 1 }
+
+sePressure	OBJECT-TYPE
+	SYNTAX		DisplayString
+	MAX-ACCESS	read-only
+	STATUS		current
+	DESCRIPTION
+		"The output value of a pressure sensor (in kilo-Pascal)."
+	::= { ieeeP1451Sensor 2 }
+
+--
+-- actuators
+--
+
+acRelay		OBJECT-TYPE
+	SYNTAX		Integer32
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION
+		"The on/off state of a relay."
+	::= { ieeeP1451Actuator 1 }
+
+acLed		OBJECT-TYPE
+	SYNTAX		Integer32
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION
+		"The on/off state of an LED."
+	::= { ieeeP1451Actuator 2 }
+
+END
