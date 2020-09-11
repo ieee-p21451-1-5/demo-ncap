@@ -8,7 +8,7 @@
 
 In this tutorial, we use `CentOS-Userland-7-armv7hl-RaspberryPI-GNOME-2003-sda1` (which is for Raspberry Pi) and `net-snmp-5.7.3` as the example.
 
-## 2. Prepare the Operating System
+## 2. Preparing the Operating System
 
 ### 2.1 Initialization
 
@@ -94,7 +94,7 @@ yum update && yum -y install vim
 
 <!---other useful softwares: zsh (with plugin) lrzsz-->
 
-## 2. Install `net-snmp`
+## 2. Installing `net-snmp`
 
 This tutorial continues, assuming you are the super user. It makes things easy but is **strongly recommended against** in practical deployment.
 
@@ -173,21 +173,30 @@ The last option specifies the target directory of installation, which defaults t
 
 - `${NET-SNMP-HOME}/share/snmp/mibs/*.txt`: MIB files in textual format 
 
-- `${NET-SNMP-HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations. See `man snmp_config` for more information.)
+- `${NET-SNMP-HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations for storing configuration files. See `man snmp_config` for more information.)
 
 #### Client
 
 Once the installation finishes, you should be able to run: 
 
 ```shell
-snmpget -v2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
+snmpget -v 2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
 ```
 
-and see results similar to:
+and you should see results similar to:
 
+```
+iso.3.6.1.2.1.1.1.0 = STRING: "Greetings from IEEE P21451-1-5 Working Group, Shanghai Jiao Tong University, Shanghai, China"
+```
 
+Explanation:
 
+`snmpget` is a program in `net-snmp` that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
 
+- `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
+- `-c public` set the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings provide bare-bones security in SNMPv1 and SNMPv2.
+- `47.88.61.169` specifies the destination of SNMP requests. An SNMP server (indeed, an NCAP) maintained by IEEE P21451-1-5 Working Group listens to this address.
+- `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
 
 #### Server
 
@@ -240,35 +249,9 @@ git clone
 
 
 
-## SNMP临时
+## 
 
-https://stackoverflow.com/questions/21564/is-there-a-unix-utility-to-prepend-timestamps-to-stdin
 
-创建AWK脚本`snmpd_output_process.awk` ：
-
-```awk
-{
-	if (NR == 1) {
-		print $0 # 针对第一行
-	}
-	else {
-		if ($2 == "TERM")
-			color = 33
-		else
-			color = 34
-		print strftime("%Y/%m/%d %H:%M:%S"), "\033[01;"color"m"$0"\033[00m"; fflush(); 
-	}
-}
-```
-
-创建脚本`snmp-daemon.sh` 
-
-```shell
-#! /bin/bash
-cd /root/
-/usr/local/sbin/snmpd -Lo -af | awk -f ./snmpd_output_process.awk > \
-./snmpd-log-$(date +'%Y%m%d%H%M%S')
-```
 
 
 
