@@ -30,7 +30,7 @@ Let the system boot into CLI mode automatically the next time:
 systemctl set-default multi-user.target
 ```
 
-Follow the instructions in `/root/README`, run this command:
+As instructed in `/root/README`, run this command:
 
 ```shell
 rootfs-expand
@@ -115,7 +115,7 @@ yum -y install gcc file perl-devel perl-Data-Dumper
 
 By *basic*, we mean that the installed SNMP server can only provide traditional network management services. For example, you can ask the server for its ARP cache, or change the behavior of a certain NIC on it.
 
-In other words, as this moment, the server cannot provide IEEE P1451 services.  
+In other words, at this moment, the server cannot provide IEEE P1451 services.  
 
 #### Installation Process
 
@@ -145,7 +145,7 @@ Start building the software:
 
 <!---这些选项确实有在起作用，如果snmpd.conf-->
 
-Explanation:
+*Explanation:*
 
 By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
 
@@ -169,7 +169,7 @@ The last option specifies the target directory of installation, which defaults t
 
   The code for your custom MIBs will also be put here.
 
-- `${NET_SNMP_HOME}/bin`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
+- `${NET_SNMP_HOME}/bin/`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
 
 - `${NET_SNMP_HOME}/sbin/snmpd`: SNMP daemon (server) program
 
@@ -188,21 +188,33 @@ snmpget -v 2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
 and you should see results similar to:
 
 ```
-iso.3.6.1.2.1.1.1.0 = STRING: "Greetings from IEEE P21451-1-5 Working Group, Shanghai Jiao Tong University, Shanghai, China"
+SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, Shanghai Jiao Tong University, Shanghai, China
 ```
 
-Explanation:
+*Explanation:*
 
 `snmpget` is the program in `net-snmp` package that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
 
 - `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
-- `-c public` set the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings provide bare-bones security in SNMPv1 and SNMPv2.
+- `-c public` sets the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings introduce bare-bones security feature in SNMPv1 and SNMPv2.
 - `47.88.61.169` specifies the destination of SNMP requests. An SNMP server (indeed, an NCAP) maintained by IEEE P21451-1-5 Working Group listens to this address.
 - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
 
 #### Server
 
-Let's craft a bare-bones configuration file first.
+First, let the firewall allow SNMP packets in.
+
+```shell
+firewall-cmd --zone=public --add-service=snmp # for this time
+firewall-cmd --zone=public --permanent --add-service=snmp # and in the future
+```
+Very that `firewalld` is working and that the port for SNMP is open:
+```shell
+systemctl status firewalld
+firewall-cmd --zone=public --list-services
+```
+
+Next we should craft a bare-bones configuration file.
 
 ```shell
 echo -e "rwcommunity\tpublic" > /usr/local/share/snmp/snmpd.conf
@@ -228,27 +240,29 @@ With the configuration file created, we can finally launch the SNMP daemon:
 snmpd -Lo -af
 ```
 
-Explanation:
+*Explanation:*
 
-`snmpd` is the SNMP daemon program in `net-snmp` package that  by default lsends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
+`snmpd` is the SNMP daemon program in `net-snmp` package that accepts incoming SNMP requests and sends response messages. By default, it listens on UDP port 161 on all IPv4 interfaces.
 
-On another terminal, 
+- `-Lo` says the daemon program will output its log to `stdout`. 
+- `-a` makes the program display the source address of incoming packets.
+- `-f` prevents the program from `fork`ing from the shell.
+
+Open another terminal and try:
 
 ```shell
 snmpget -v 2c -c public localhost 1.3.6.1.2.1.1.1.0
 ```
 
+Your should see results that are a subset of `uname -a`  output. For example:
 
-
-```shell
-systemctl disable firewalld
+```
+SNMPv2-MIB::sysDescr.0 = STRING: Linux ncap 5.4.56-v7.1.el7 #1 SMP Sat Aug 8 20:58:22 UTC 2020 armv7l
 ```
 
+At this moment, you are able to manually launch an SNMP daemon, which, however, vanishes once you log out from the terminal.
 
-
-Your should see a result that is a subset of `uname -a`  output
-
-Make it a `systemd` service
+To let it start automatically in the background each time the machine boots, make it a `systemd` service.
 
 create a sync test service
 
@@ -349,11 +363,9 @@ mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 
 mib2c -c mib2c.scalar.conf IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 
-ieeeP1451Project.c  ieeeP1451Project.h
+  ieeeP1451Project.h
 
-
-
-
+[ieeeP1451Project.c](snmpd/source/demo_auto_generated/ieeeP1451Project.c) [ieeeP1451Project.h](snmpd/source/demo_auto_generated/ieeeP1451Project.h)
 
 
 
