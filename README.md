@@ -293,16 +293,6 @@ remove
 
 
 
-
-
-
-
-
-
-
-
-
-
 ### 2.3 Custom MIBs
 
 enterprises  is 1.3.6.1.4
@@ -361,19 +351,41 @@ mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 
 2 - 1
 
+```shell
 mib2c -c mib2c.scalar.conf IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
+```
 
-  ieeeP1451Project.h
+[ieeeP1451Project.c](snmpd/source/demo_auto_generated/ieeeP1451Project.c)  **to modify**
 
-[ieeeP1451Project.c](snmpd/source/demo_auto_generated/ieeeP1451Project.c) [ieeeP1451Project.h](snmpd/source/demo_auto_generated/ieeeP1451Project.h)
+[ieeeP1451Project.h](snmpd/source/demo_auto_generated/ieeeP1451Project.h) **to modify**
 
 
 
-mv p21451Project.* net-snmp-5.7.3/agent/mibgroup
+```shell
+cp /root/demo-ncap/snmpd/source/mib_demo/* ${NET_SNMP_HOME}/agent/mibgroup/
+```
 
---with-mib-modules=p21451Project
+```shell
+./configure \
+--with-default-snmp-version="3" \
+--with-sys-contact="Jun WU <junwuhn@sjtu.edu.cn>" \
+--with-sys-location="Shanghai, China" \
+--with-logfile="/var/log/snmpd.log" \
+--with-persistent-directory="/var/net-snmp" \
+--prefix="/usr/local/" \
+--with-mib-modules=ieeeP1451Project \
+&& make && make install
+```
 
-snmpget -v1 -c public localhost P21451-TEST-MIB::sePressure.0
+
+
+```shell
+snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
+```
+
+
+
+
 
 
 
