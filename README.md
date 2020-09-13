@@ -145,15 +145,16 @@ Start building the software:
 
 <!---这些选项确实有在起作用，如果snmpd.conf-->
 
-*Explanation:*
-
-By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
-
-For each option's meaning, run `configure` without any option and see what it prompts. Modify the value part in these options if you would like to. 
-
-<!--- or use "--with-defaults"  -->
-
-The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET_SNMP_HOME}`. In the command above, we explicitly set `${NET_SNMP_HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute certain commands later.
+> **Explanation:**
+>
+> By default, `configure` will interactively ask you some questions before finishing its job. The first 5 options, however, give immediate answer to these questions and suppress the tedious interactive procedure. They can truly save the day. 
+>
+> For each option's meaning, run `configure` without any option and see what it prompts. Modify the value part in these options if you would like to. 
+>
+> <!--- or use "--with-defaults"  -->
+>
+> The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET_SNMP_HOME}`. In the command above, we explicitly set `${NET_SNMP_HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute certain commands later.
+>
 
 #### Important Directories and Files of `net-snmp`
 
@@ -191,14 +192,15 @@ and you should see results similar to:
 SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, Shanghai Jiao Tong University, Shanghai, China
 ```
 
-*Explanation:*
-
-`snmpget` is the program in `net-snmp` package that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
-
-- `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
-- `-c public` sets the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings introduce bare-bones security feature in SNMPv1 and SNMPv2.
-- `47.88.61.169` specifies the destination of SNMP requests. An SNMP server (indeed, an NCAP) maintained by IEEE P21451-1-5 Working Group listens to this address.
-- `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
+> Explanation:
+>
+> `snmpget` is the program in `net-snmp` package that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
+>
+> - `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
+> - `-c public` sets the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings introduce bare-bones security feature in SNMPv1 and SNMPv2.
+> - `47.88.61.169` specifies the destination of SNMP requests. An SNMP server (indeed, an NCAP) maintained by IEEE P21451-1-5 Working Group listens to this address.
+> - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
+>
 
 #### Server
 
@@ -240,13 +242,14 @@ With the configuration file created, we can finally launch the SNMP daemon:
 snmpd -Lo -af
 ```
 
-*Explanation:*
-
-`snmpd` is the SNMP daemon program in `net-snmp` package that accepts incoming SNMP requests and sends response messages. By default, it listens on UDP port 161 on all IPv4 interfaces.
-
-- `-Lo` says the daemon program will output its log to `stdout`. 
-- `-a` makes the program display the source address of incoming packets.
-- `-f` prevents the program from `fork`ing from the shell.
+> **Explanation:**
+>
+> `snmpd` is the SNMP daemon program in `net-snmp` package that accepts incoming SNMP requests and sends response messages. By default, it listens on UDP port 161 on all IPv4 interfaces.
+>
+> - `-Lo` says the daemon program will output its log to `stdout`. 
+> - `-a` makes the program display the source address of incoming packets.
+> - `-f` prevents the program from `fork`ing from the shell.
+>
 
 Open another terminal and try:
 
@@ -262,7 +265,13 @@ SNMPv2-MIB::sysDescr.0 = STRING: Linux ncap 5.4.56-v7.1.el7 #1 SMP Sat Aug 8 20:
 
 At this moment, you are able to manually launch an SNMP daemon, which, however, vanishes once you log out from the terminal.
 
-To let it start automatically in the background each time the machine boots, make it a `systemd` service.
+To let it start automatically in the background each time the machine boots, make it a `systemd` service. 
+
+
+
+To make 
+
+
 
 create a sync test service
 
@@ -299,6 +308,10 @@ enterprises  is 1.3.6.1.4
 
 Assuming `${NET_SNMP_HOME}`
 
+
+
+add these two lines to 
+
 ```shell
 export NET_SNMP_HOME="/usr/local"
 export NET_SNMP_SRC_ROOT="/root/net-snmp-5.7.3"
@@ -315,8 +328,6 @@ snmptranslate -On IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0
 ```
 .1.3.6.1.4.1.7934.1451.2.2.0
 ```
-
-
 
 ```shell
 snmptranslate -Tp IEEE-P1451-SIMPLE-DEMO-MIB::sjtu
@@ -355,17 +366,18 @@ mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 mib2c -c mib2c.scalar.conf IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 ```
 
-[ieeeP1451Project.c](snmpd/source/demo_auto_generated/ieeeP1451Project.c)  **to modify**
+[ieeeP1451Project.c](snmpd/source/mib_demo_auto_generated/ieeeP1451Project.c)
 
-[ieeeP1451Project.h](snmpd/source/demo_auto_generated/ieeeP1451Project.h) **to modify**
+[ieeeP1451Project.h](snmpd/source/mib_demo_auto_generated/ieeeP1451Project.h)
 
 
 
 ```shell
-cp /root/demo-ncap/snmpd/source/mib_demo/* ${NET_SNMP_HOME}/agent/mibgroup/
+cp /root/demo-ncap/snmpd/source/mib_demo/* ${NET_SNMP_SRC_ROOT}/agent/mibgroup/
 ```
 
 ```shell
+cd ${NET_SNMP_SRC_ROOT}/
 ./configure \
 --with-default-snmp-version="3" \
 --with-sys-contact="Jun WU <junwuhn@sjtu.edu.cn>" \
@@ -377,17 +389,17 @@ cp /root/demo-ncap/snmpd/source/mib_demo/* ${NET_SNMP_HOME}/agent/mibgroup/
 && make && make install
 ```
 
-
+```shell
+systemctl restart snmp-daemon
+```
 
 ```shell
 snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
 ```
 
-
-
-
-
-
+```shell
+make && make install
+```
 
 ## X. Troubleshooting
 
