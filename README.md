@@ -202,15 +202,15 @@ SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, S
 > - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
 >
 
-[More Client Program Examples](client-examples.md)
+[More Client Program Examples](client-examples.md) <!---TODO or present an snmpset example like above-->
 
 #### Server
 
 First, let the firewall allow SNMP packets in.
 
 ```shell
-firewall-cmd --zone=public --add-service=snmp # for this time
-firewall-cmd --zone=public --permanent --add-service=snmp # and for good
+firewall-cmd --zone=public --add-service=snmp				# for once
+firewall-cmd --zone=public --permanent --add-service=snmp	# and for good
 ```
 Very that `firewalld` is working and that the port for SNMP is open:
 ```shell
@@ -265,21 +265,21 @@ Your should see results that are a subset of `uname -a`  output. For example:
 SNMPv2-MIB::sysDescr.0 = STRING: Linux ncap 5.4.56-v7.1.el7 #1 SMP Sat Aug 8 20:58:22 UTC 2020 armv7l
 ```
 
-At this moment, you are able to manually launch an SNMP daemon, which, however, vanishes once you log out from the terminal. To let `snmpd` start automatically in the background each time the machine boots, make it a `systemd` service. 
+At this moment, you are able to manually launch an SNMP daemon, which, however, vanishes once you log out from the terminal. To let `snmpd` start automatically in the background each time the machine boots, make it a `systemd` service. We will name it as `snmp-daemon.service`. 
 
 Before doing that, we have to look after yet another thing: system time synchronization.
 
+Since Raspberry Pi doesn't have any [RTC](https://en.wikipedia.org/wiki/Real-time_clock), in its early stage of booting, the system time is "somewhen" on January 1, 1970 ([Unix epoch](https://en.wikipedia.org/wiki/Unix_time)). To avoid such archaic (and incorrect, of course) timestamps in the naming of log files, we'd better start services after the system clock has been synchronized through Internet. Therefore, we are going to craft a special service named `check-sync.service`, which will finish its initialization process only if the system clock has been synchronized. 
 
+Besides, we will create a logging service named `snmpd-traffic.service` using `tcpdump`.
 
-
-
-create a sync test service
+First, install some dependencies:
 
 ```shell
 yum -y install git ntp tcpdump
 ```
 
-
+Then, run the following commands:
 
 ```shell
 cd /root/
@@ -290,43 +290,65 @@ systemctl daemon-reload
 systemctl enable check-sync.service snmp-daemon.service snmpd-traffic.service 
 ```
 
+Reboot the system.
 
+> **How to Uninstall a Service?**
+>
+> - Delete the `*.service` file itself. For our system, they were put under `/etc/systemd/system/`.
+>
+> - Remove the symbolic links in certain `*.wants/` directories that point to the unwanted service . For the three services we just created, they have their symbolic links in `/etc/systemd/system/multi-user.target.wants/`.
+>
+> - Clear log files. 
+>
+>   ```shell
+>   rm /root/demo-ncap/snmpd/logs/*
+>   ```
 
-remove
+To view the logs (replace the `<date_and_time>` part with appropriate value):
 
+```shell
+tail -f /root/demo-ncap/snmpd/logs/snmpd-log-<date_and_time>			# snmpd's log
+tail -f /root/demo-ncap/snmpd/logs/snmpd-traffic-log-<date_and_time>	# tcpdump's log
+```
 
+or view the latest log file:
 
-/etc/systemd/system/
-
-/etc/systemd/system/default.target.wants/
-
-
-
-To see the logs:
-
-
+```shell
+tail -f $(ls /root/demo-ncap/snmpd/logs/snmpd-log-* | sort | tail -n 1)			# snmpd's log
+tail -f $(ls /root/demo-ncap/snmpd/logs/snmpd-traffic-log-* | sort | tail -n 1)	# tcpdump's log
+```
 
 ### 2.3 Custom MIBs
 
-enterprises  is 1.3.6.1.4
+<!--- the enterprises OID is 1.3.6.1.4.1 -->
 
-Assuming `${NET_SNMP_HOME}`
+We assume that:
 
+- You've installed `net-snmp` to `/usr/local/`, which will be denoted as `${NET_SNMP_HOME}`.
+- The source is unzipped and put under `/root/net-snmp-5.7.3/`, which will be denoted as `${NET_SNMP_SRC_ROOT}`.
 
-
-add these two lines to 
+Run the following commands:
 
 ```shell
 export NET_SNMP_HOME="/usr/local"
 export NET_SNMP_SRC_ROOT="/root/net-snmp-5.7.3"
 ```
 
+It is recommended that to add these two lines to the initialization scripts of your shell, like `~/.bashrc` or `~/.zshrc`.
+
+First, create your custom MIB file conforming to [SMI](https://en.wikipedia.org/wiki/Structure_of_Management_Information) specifications, that defines what variables (management information) you wish to read and write remotely using SNMP. Native MIB files distributed with `net-snmp` package, which are located under `${NET_SNMP_HOME}/share/snmp/mibs/`, can be of reference can be your reference, as well as a good starting point of writing your own MIB.
+
+For convenience, we provide you with [a simple example](snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt). This MIB defines two sensors (read-only) and two actuators (read-write), which are going to be accessed using SNMP.
+
+Put it to the right place so that programs of `net-snmp` can find it:
+
 ```shell
 cp /root/demo-ncap/snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt ${NET_SNMP_HOME}/share/snmp/mibs/
 ```
 
+Verify that 
 ```shell
-snmptranslate -On IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0
+snmptranslate -On IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
 ```
 
 ```
@@ -406,14 +428,22 @@ systemctl restart snmp-daemon
 ```
 
 ```shell
-snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
-snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::sePressue.0
 
-snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
+➜  ~ snmpset -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0 = 0
+IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0 = INTEGER: 0
+➜  ~ snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0 
+IEEE-P1451-SIMPLE-DEMO-MIB::acLed.0 = INTEGER: 0
 
-snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::sePressure.0
+➜  ~ snmpset -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acRelay.0 = 0
+IEEE-P1451-SIMPLE-DEMO-MIB::acRelay.0 = INTEGER: 0
+➜  ~ snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acRelay.0 
+IEEE-P1451-SIMPLE-DEMO-MIB::acRelay.0 = INTEGER: 0
 
-snmpset -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acRelay.0 i 1
+➜  ~ snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
+IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0 = STRING: 23.77
+➜  ~ snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::sePressure.0 
+IEEE-P1451-SIMPLE-DEMO-MIB::sePressure.0 = STRING: 101.86
+
 ```
 
 ```shell
