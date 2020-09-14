@@ -8,13 +8,38 @@
 #include <net-snmp/agent/net-snmp-agent-includes.h>
 #include "ieeeP1451Project.h"
 
-char    fake_sensor_data_temperature[]      = "24.7";
-int     fake_sensor_data_length_temperature = 4;
-char    fake_sensor_data_pressure[]         = "101.5";
-int     fake_sensor_data_length_pressure    = 5;
+/* NOTE: customized code of `ncap-demo' project STARTS here */
 
-int     fake_switch_status_relay            = 0;
-int     fake_switch_status_led              = 0;
+#include	<stdlib.h>
+#include	<stdio.h>
+#include	<time.h>
+
+#define		CHAR_ARRAY_SIZE 20
+
+/* Used for transmmiting sensor data in textual strings. */
+/* By `fake' here we mean the system is not connected to any real sensor. */
+/* The readout is just some random value. */
+char	fake_sensor_data[CHAR_ARRAY_SIZE];
+/* base (average) value */
+float	fake_sensor_data_temperature_base	= 24.0;
+float	fake_sensor_data_pressure_base		= 101.0;
+/* specifies how to format the string to be transmiitted */
+char	fake_sensor_data_temperature_format[]	= "%2.2f";
+char	fake_sensor_data_pressure_format[]	= "%3.2f";
+/* specifies the length of the string to be transmiitted */
+int	fake_sensor_data_length_temperature	= 5;
+int	fake_sensor_data_length_pressure	= 6;
+/* Some virtual actuators for clients to control. */
+/* Since no real actuators exist either, we call them `fake' ones. */
+int	fake_switch_status_relay		= 0;
+int	fake_switch_status_led			= 0;
+
+/* returns a float value ranging from 0. to 1. */
+float	randf() {
+	return ((float) rand()) / ((float) RAND_MAX);
+}
+
+/* NOTE: customized code of `ncap-demo' project ENDS here */
 
 /** Initializes the ieeeP1451Project module */
 void
@@ -47,6 +72,13 @@ init_ieeeP1451Project(void)
                                acLed_oid, OID_LENGTH(acLed_oid),
                                HANDLER_CAN_RWRITE
         ));
+
+	/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+	/* random number seed init */
+	srand(time(0));
+
+	/* NOTE: customized code of `ncap-demo' project ENDS here */
 }
 
 int
@@ -61,12 +93,29 @@ handle_seTemperature(netsnmp_mib_handler *handler,
     /* a instance handler also only hands us one request at a time, so
        we don't need to loop over a list of requests; we'll only get one. */
     
+    /* NOTE: customized code of `ncap-demo' project STARTS here */
+
+    float fake_sensor_data_value;
+
+    /* NOTE: customized code of `ncap-demo' project ENDS here */
+
     switch(reqinfo->mode) {
 
         case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
-                                     &fake_sensor_data_temperature/* XXX: a pointer to the scalar's data */,
-                                     fake_sensor_data_length_temperature/* XXX: the length of the data in bytes */);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+		/* add some fake noise */
+		fake_sensor_data_value = fake_sensor_data_temperature_base + (randf()-0.5)*2.0;
+		/* formmat the result into a `xx.xx'-like look and store it in a char array */
+		snprintf(fake_sensor_data, CHAR_ARRAY_SIZE, 
+		         fake_sensor_data_temperature_format, fake_sensor_data_value);
+		/* put the fake sensor value into the response message */
+            snmp_set_var_typed_value(requests->requestvb, /* the var-binding part in the message */
+	                             ASN_OCTET_STR, /* type */
+                                     fake_sensor_data, /* pointer to the data */
+                                     fake_sensor_data_length_temperature /* length of data*/ );
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
 
@@ -90,12 +139,26 @@ handle_sePressure(netsnmp_mib_handler *handler,
     /* a instance handler also only hands us one request at a time, so
        we don't need to loop over a list of requests; we'll only get one. */
     
+    /* NOTE: customized code of `ncap-demo' project STARTS here */
+
+    float fake_sensor_data_value;
+
+    /* NOTE: customized code of `ncap-demo' project ENDS here */
+
     switch(reqinfo->mode) {
 
         case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
-                                     &fake_sensor_data_pressure/* XXX: a pointer to the scalar's data */,
-                                     &fake_sensor_data_length_pressure/* XXX: the length of the data in bytes */);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+		fake_sensor_data_value = fake_sensor_data_pressure_base + (randf()-0.5)*2.0;
+		snprintf(fake_sensor_data, CHAR_ARRAY_SIZE, 
+		         fake_sensor_data_pressure_format, fake_sensor_data_value);
+            snmp_set_var_typed_value(requests->requestvb,
+	                             ASN_OCTET_STR,
+                                     fake_sensor_data,
+                                     fake_sensor_data_length_pressure);
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
 
@@ -123,9 +186,14 @@ handle_acRelay(netsnmp_mib_handler *handler,
     switch(reqinfo->mode) {
 
         case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
-                                     &fake_switch_status_relay/* XXX: a pointer to the scalar's data */,
-                                     4/* XXX: the length of the data in bytes */);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+            snmp_set_var_typed_value(requests->requestvb,
+	                             ASN_INTEGER,
+                                     &fake_switch_status_relay,
+                                     4 /* size of `int' type */ );
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
         /*
@@ -156,11 +224,13 @@ handle_acRelay(netsnmp_mib_handler *handler,
         //     break;
 
         case MODE_SET_ACTION:
-            // /* XXX: perform the value change here */
-            // if (/* XXX: error? */) {
-            //     netsnmp_set_request_error(reqinfo, requests, /* some error */);
-            // }
-            fake_switch_status_relay = *((int *) requests->requestvb->buf);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+		/* Treat the bytes in the data part of the request message as */
+		/* `int' type and assign the target variable with the `int' variable's value */
+		fake_switch_status_relay = *((int *) requests->requestvb->buf);
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
         // case MODE_SET_COMMIT:
@@ -203,9 +273,14 @@ handle_acLed(netsnmp_mib_handler *handler,
     switch(reqinfo->mode) {
 
         case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
-                                     &fake_switch_status_led/* XXX: a pointer to the scalar's data */,
-                                     4/* XXX: the length of the data in bytes */);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+            snmp_set_var_typed_value(requests->requestvb, 
+                                     ASN_INTEGER,
+                                     &fake_switch_status_led,
+                                     4);
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
         /*
@@ -236,11 +311,11 @@ handle_acLed(netsnmp_mib_handler *handler,
         //     break;
 
         case MODE_SET_ACTION:
-            // /* XXX: perform the value change here */
-            // if (/* XXX: error? */) {
-            //     netsnmp_set_request_error(reqinfo, requests, /* some error */);
-            // }
-            fake_switch_status_led = *((int *) requests->requestvb->buf);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+		fake_switch_status_led = *((int *) requests->requestvb->buf);
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
         // case MODE_SET_COMMIT:

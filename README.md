@@ -192,7 +192,7 @@ and you should see results similar to:
 SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, Shanghai Jiao Tong University, Shanghai, China
 ```
 
-> Explanation:
+> **Explanation:**
 >
 > `snmpget` is the program in `net-snmp` package that sends [GetResquest PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) and receives [GetResponse PDU](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details).
 >
@@ -202,13 +202,15 @@ SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, S
 > - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
 >
 
+[More Client Program Examples](client-examples.md)
+
 #### Server
 
 First, let the firewall allow SNMP packets in.
 
 ```shell
 firewall-cmd --zone=public --add-service=snmp # for this time
-firewall-cmd --zone=public --permanent --add-service=snmp # and in the future
+firewall-cmd --zone=public --permanent --add-service=snmp # and for good
 ```
 Very that `firewalld` is working and that the port for SNMP is open:
 ```shell
@@ -263,13 +265,11 @@ Your should see results that are a subset of `uname -a`  output. For example:
 SNMPv2-MIB::sysDescr.0 = STRING: Linux ncap 5.4.56-v7.1.el7 #1 SMP Sat Aug 8 20:58:22 UTC 2020 armv7l
 ```
 
-At this moment, you are able to manually launch an SNMP daemon, which, however, vanishes once you log out from the terminal.
+At this moment, you are able to manually launch an SNMP daemon, which, however, vanishes once you log out from the terminal. To let `snmpd` start automatically in the background each time the machine boots, make it a `systemd` service. 
 
-To let it start automatically in the background each time the machine boots, make it a `systemd` service. 
+Before doing that, we have to look after yet another thing: system time synchronization.
 
 
-
-To make 
 
 
 
@@ -299,6 +299,10 @@ remove
 /etc/systemd/system/
 
 /etc/systemd/system/default.target.wants/
+
+
+
+To see the logs:
 
 
 
@@ -372,6 +376,14 @@ mib2c -c mib2c.scalar.conf IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 
 
 
+modified:
+
+[ieeeP1451Project.c](snmpd/source/mib_demo/ieeeP1451Project.c)
+
+
+
+
+
 ```shell
 cp /root/demo-ncap/snmpd/source/mib_demo/* ${NET_SNMP_SRC_ROOT}/agent/mibgroup/
 ```
@@ -395,6 +407,13 @@ systemctl restart snmp-daemon
 
 ```shell
 snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
+snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::sePressue.0
+
+snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
+
+snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::sePressure.0
+
+snmpset -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acRelay.0 i 1
 ```
 
 ```shell
