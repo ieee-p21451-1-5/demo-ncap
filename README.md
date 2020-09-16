@@ -352,7 +352,7 @@ snmptranslate -On IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0
 ```
 
 ```
-.1.3.6.1.4.1.7934.1451.2.2.0
+.1.3.6.1.4.1.7934.1451.1.1.0
 ```
 
 ```shell
