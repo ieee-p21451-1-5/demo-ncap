@@ -11,5 +11,6 @@ Netsnmp_Node_Handler handle_seTemperature;
 Netsnmp_Node_Handler handle_sePressure;
 Netsnmp_Node_Handler handle_acRelay;
 Netsnmp_Node_Handler handle_acLed;
+Netsnmp_Node_Handler handle_acLcd;
 
 #endif /* IEEEP1451PROJECT_H */

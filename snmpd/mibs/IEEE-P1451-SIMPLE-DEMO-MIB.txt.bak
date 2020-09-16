@@ -53,12 +53,4 @@ acLed		OBJECT-TYPE
 		"The on/off state of an LED."
 	::= { ieeeP1451Actuator 2 }
 
-acLcd		OBJECT-TYPE
-	SYNTAX		DisplayString
-	MAX-ACCESS	read-write
-	STATUS		current
-	DESCRIPTION
-		"The display content of an LCD screen."
-	::= { ieeeP1451Actuator 3 }
-
 END
