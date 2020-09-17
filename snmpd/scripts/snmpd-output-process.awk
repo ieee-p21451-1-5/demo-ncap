@@ -15,7 +15,8 @@
 			color = 34
 		print strftime("%Y/%m/%d %H:%M:%S"), "\033[01;"color"m"$0"\033[00m"; fflush()
 		} else {
-			print strftime("%Y/%m/%d %H:%M:%S"), $0
+			# Debug message from inside C programs
+			print $0
 		}
 		
 	}
