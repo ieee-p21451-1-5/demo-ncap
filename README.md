@@ -111,6 +111,8 @@ For those who are strict with security and resist taking this risk (which is goo
 yum -y install gcc file perl-devel perl-Data-Dumper
 ```
 
+<!--- 其中perl-Data-Dumper是运行snmpconf -g basic_setup所必需的，如果不运行这个程序，可能也不需要这个依赖 -->
+
 ### 2.2 Basic Installation
 
 By *basic*, we mean that the installed SNMP server can only provide traditional network management services. For example, you can ask the server for its ARP cache, or change the behavior of a certain NIC on it.

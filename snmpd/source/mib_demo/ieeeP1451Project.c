@@ -8,6 +8,174 @@
 #include <net-snmp/agent/net-snmp-agent-includes.h>
 #include "ieeeP1451Project.h"
 
+/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+#include	<stdlib.h>
+#include	<stdio.h>
+#include	<time.h>
+
+#define		CHAR_ARRAY_SIZE		20
+#define		BYTE_NUM_PER_LINE	16
+
+/**** Fake Sensors ****/
+
+/* Used for transmmiting sensor data in textual strings. */
+/* By `fake' here we mean the system is not connected to any real sensor. */
+/* The readout is just some random value. */
+char	fake_sensor_data[CHAR_ARRAY_SIZE];
+/* base (average) value */
+float	fake_sensor_data_temperature_base		= 24.0;
+float	fake_sensor_data_pressure_base			= 101.0;
+/* specifies how to format the string to be transmiitted */
+char	fake_sensor_data_temperature_format[]		= "%2.2f";
+char	fake_sensor_data_pressure_format[]		= "%3.2f";
+/* specifies the length of the string to be transmiitted */
+int	fake_sensor_data_length_temperature		= 5;
+int	fake_sensor_data_length_pressure		= 6;
+
+/**** Fake Actuators ****/
+
+/* Some virtual actuators for clients to control. */
+/* Since no real actuators exist either, we call them `fake' ones. */
+int	fake_switch_status_relay			= 0;
+int	fake_switch_status_led				= 0;
+char	fake_lcd_display_string[CHAR_ARRAY_SIZE]	= "Hello, world!";
+/* does not include the null character */
+int	fake_lcd_display_string_len			= 13;
+
+/* returns a float value ranging from 0. to 1. */
+float	randf()
+{
+	return ((float) rand()) / ((float) RAND_MAX);
+}
+
+/**** Tool Functions for Understanding Net-SNMP Data Structure****/
+
+
+void	print_oid(oid *name, size_t name_length)
+{
+	/* XXX: the variable type & size might be buggy */
+	int i;
+	printf("%u", name[0]);
+	for (i = 1; i < name_length; i++) {
+		printf(".%u", name[i]);
+	}
+}
+
+void	print_printable(unsigned char c)
+{
+	if (c >= 0x20 && c <= 0x7e) {
+		printf("%c", c);
+	} else {
+		switch (c) {
+		case 0x00:
+			printf("\\0");
+			break;
+		case 0x09:
+			printf("\\t");
+			break;
+		case 0x0a:
+			printf("\\n");
+			break;
+		case 0x0d:
+			printf("\\r");
+			break;
+		default:
+			printf(".");
+		}
+	}
+}
+
+void	print_var_binding_s_value_part(netsnmp_variable_list *requestvb)
+{
+	netsnmp_vardata	val		= requestvb->val;
+	u_char		type		= requestvb->type;
+	size_t		val_len		= requestvb->val_len;
+	u_char		*buf		= requestvb->buf;
+	int		i;
+	int		newline_cnt;
+
+	/* TODO: complete all possible types */
+	switch (type) {
+	case 2U:
+		/* snmpset with `i' type indicator */
+		printf("%d", *(val.integer));
+		break;
+
+	case 4U:
+		/* snmpset with `s/d/x' type indicator */
+		// printf("%s", val.string);
+		for (i = 0; i < val_len; i++) {
+			print_printable(val.string[i]);
+		}
+
+		printf("\n  ");
+
+		/* see what buf[] holds */
+		newline_cnt = 0;
+		for (i = 0; i < val_len; i++) {
+			printf("%02x ", buf[i]);
+			if (++newline_cnt >= BYTE_NUM_PER_LINE) {
+				newline_cnt = 0;
+				printf("\n  ");
+			}
+		}
+		break;
+	case 6U:
+		/* snmpset with `o' type indicator */
+		/* XXX: the variable type & size might be buggy */
+		print_oid(val.objid, val_len/sizeof(oid)); 
+		break;
+	case 64U:
+		/* snmpset with `a' type indicator */
+		printf("%u.%u.%u.%u", val.bitstring[0],
+		                      val.bitstring[1],
+		                      val.bitstring[2],
+		                      val.bitstring[3]);
+		break;
+	case 66U:
+		/* snmpset with `u' type indicator */
+		/* XXX: the variable type & size might be buggy */ 
+		/* though tested OK: 0 ~ 4294967295 */
+		printf("%d", *((unsigned long *) val.integer));
+		break;
+	case 67U:
+		/* snmpset with `t' type indicator */
+		/* TODO */
+		break;
+	default:
+		break;
+	}
+}
+
+void	request_dump(netsnmp_request_info *requests)
+{
+	/* XXX: the variable type & size might be buggy */
+	/*
+	  some typedefs on dell Ubuntu (not on Pi)
+	  oid		u_long
+	  name_length	size_t (always)
+	  type		u_char (always)
+	*/	
+	printf("────────────────SNMP request dump────────────────\n");
+	printf("name_len:       %u\n", requests->requestvb->name_length);
+	// printf("	name:		");
+	// print_objid(requests->requestvb->name, requests->requestvb->name_length);
+	printf("name:           ");
+	print_oid(requests->requestvb->name, requests->requestvb->name_length);
+	printf("\n");
+	printf("type:           %u\n", requests->requestvb->type);
+	printf("val_len:        %u\n", requests->requestvb->val_len);
+	printf("value:          ");
+	print_var_binding_s_value_part(requests->requestvb);
+	// print_value()
+	printf("\n");
+
+	printf("─────────────────────────────────────────────────\n");
+}
+
+/* NOTE: customized code of `ncap-demo' project ENDS here */
+
 /** Initializes the ieeeP1451Project module */
 void
 init_ieeeP1451Project(void)
@@ -20,26 +188,26 @@ init_ieeeP1451Project(void)
 
   DEBUGMSGTL(("ieeeP1451Project", "Initializing\n"));
 
-    netsnmp_register_scalar(
-        netsnmp_create_handler_registration("seTemperature", handle_seTemperature,
-                               seTemperature_oid, OID_LENGTH(seTemperature_oid),
-                               HANDLER_CAN_RONLY
-        ));
-    netsnmp_register_scalar(
-        netsnmp_create_handler_registration("sePressure", handle_sePressure,
-                               sePressure_oid, OID_LENGTH(sePressure_oid),
-                               HANDLER_CAN_RONLY
-        ));
-    netsnmp_register_scalar(
-        netsnmp_create_handler_registration("acRelay", handle_acRelay,
-                               acRelay_oid, OID_LENGTH(acRelay_oid),
-                               HANDLER_CAN_RWRITE
-        ));
-    netsnmp_register_scalar(
-        netsnmp_create_handler_registration("acLed", handle_acLed,
-                               acLed_oid, OID_LENGTH(acLed_oid),
-                               HANDLER_CAN_RWRITE
-        ));
+//     netsnmp_register_scalar(
+//         netsnmp_create_handler_registration("seTemperature", handle_seTemperature,
+//                                seTemperature_oid, OID_LENGTH(seTemperature_oid),
+//                                HANDLER_CAN_RONLY
+//         ));
+//     netsnmp_register_scalar(
+//         netsnmp_create_handler_registration("sePressure", handle_sePressure,
+//                                sePressure_oid, OID_LENGTH(sePressure_oid),
+//                                HANDLER_CAN_RONLY
+//         ));
+//     netsnmp_register_scalar(
+//         netsnmp_create_handler_registration("acRelay", handle_acRelay,
+//                                acRelay_oid, OID_LENGTH(acRelay_oid),
+//                                HANDLER_CAN_RWRITE
+//         ));
+//     netsnmp_register_scalar(
+//         netsnmp_create_handler_registration("acLed", handle_acLed,
+//                                acLed_oid, OID_LENGTH(acLed_oid),
+//                                HANDLER_CAN_RWRITE
+//         ));
     netsnmp_register_scalar(
         netsnmp_create_handler_registration("acLcd", handle_acLcd,
                                acLcd_oid, OID_LENGTH(acLcd_oid),
@@ -47,222 +215,222 @@ init_ieeeP1451Project(void)
         ));
 }
 
-int
-handle_seTemperature(netsnmp_mib_handler *handler,
-                          netsnmp_handler_registration *reginfo,
-                          netsnmp_agent_request_info   *reqinfo,
-                          netsnmp_request_info         *requests)
-{
-    /* We are never called for a GETNEXT if it's registered as a
-       "instance", as it's "magically" handled for us.  */
+// int
+// handle_seTemperature(netsnmp_mib_handler *handler,
+//                           netsnmp_handler_registration *reginfo,
+//                           netsnmp_agent_request_info   *reqinfo,
+//                           netsnmp_request_info         *requests)
+// {
+//     /* We are never called for a GETNEXT if it's registered as a
+//        "instance", as it's "magically" handled for us.  */
 
-    /* a instance handler also only hands us one request at a time, so
-       we don't need to loop over a list of requests; we'll only get one. */
+//     /* a instance handler also only hands us one request at a time, so
+//        we don't need to loop over a list of requests; we'll only get one. */
     
-    switch(reqinfo->mode) {
+//     switch(reqinfo->mode) {
 
-        case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
-                                     /* XXX: a pointer to the scalar's data */,
-                                     /* XXX: the length of the data in bytes */);
-            break;
+//         case MODE_GET:
+//             snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
+//                                      /* XXX: a pointer to the scalar's data */,
+//                                      /* XXX: the length of the data in bytes */);
+//             break;
 
 
-        default:
-            /* we should never get here, so this is a really bad error */
-            snmp_log(LOG_ERR, "unknown mode (%d) in handle_seTemperature\n", reqinfo->mode );
-            return SNMP_ERR_GENERR;
-    }
+//         default:
+//             /* we should never get here, so this is a really bad error */
+//             snmp_log(LOG_ERR, "unknown mode (%d) in handle_seTemperature\n", reqinfo->mode );
+//             return SNMP_ERR_GENERR;
+//     }
 
-    return SNMP_ERR_NOERROR;
-}
-int
-handle_sePressure(netsnmp_mib_handler *handler,
-                          netsnmp_handler_registration *reginfo,
-                          netsnmp_agent_request_info   *reqinfo,
-                          netsnmp_request_info         *requests)
-{
-    /* We are never called for a GETNEXT if it's registered as a
-       "instance", as it's "magically" handled for us.  */
+//     return SNMP_ERR_NOERROR;
+// }
+// int
+// handle_sePressure(netsnmp_mib_handler *handler,
+//                           netsnmp_handler_registration *reginfo,
+//                           netsnmp_agent_request_info   *reqinfo,
+//                           netsnmp_request_info         *requests)
+// {
+//     /* We are never called for a GETNEXT if it's registered as a
+//        "instance", as it's "magically" handled for us.  */
 
-    /* a instance handler also only hands us one request at a time, so
-       we don't need to loop over a list of requests; we'll only get one. */
+//     /* a instance handler also only hands us one request at a time, so
+//        we don't need to loop over a list of requests; we'll only get one. */
     
-    switch(reqinfo->mode) {
+//     switch(reqinfo->mode) {
 
-        case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
-                                     /* XXX: a pointer to the scalar's data */,
-                                     /* XXX: the length of the data in bytes */);
-            break;
+//         case MODE_GET:
+//             snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
+//                                      /* XXX: a pointer to the scalar's data */,
+//                                      /* XXX: the length of the data in bytes */);
+//             break;
 
 
-        default:
-            /* we should never get here, so this is a really bad error */
-            snmp_log(LOG_ERR, "unknown mode (%d) in handle_sePressure\n", reqinfo->mode );
-            return SNMP_ERR_GENERR;
-    }
+//         default:
+//             /* we should never get here, so this is a really bad error */
+//             snmp_log(LOG_ERR, "unknown mode (%d) in handle_sePressure\n", reqinfo->mode );
+//             return SNMP_ERR_GENERR;
+//     }
 
-    return SNMP_ERR_NOERROR;
-}
-int
-handle_acRelay(netsnmp_mib_handler *handler,
-                          netsnmp_handler_registration *reginfo,
-                          netsnmp_agent_request_info   *reqinfo,
-                          netsnmp_request_info         *requests)
-{
-    int ret;
-    /* We are never called for a GETNEXT if it's registered as a
-       "instance", as it's "magically" handled for us.  */
+//     return SNMP_ERR_NOERROR;
+// }
+// int
+// handle_acRelay(netsnmp_mib_handler *handler,
+//                           netsnmp_handler_registration *reginfo,
+//                           netsnmp_agent_request_info   *reqinfo,
+//                           netsnmp_request_info         *requests)
+// {
+//     int ret;
+//     /* We are never called for a GETNEXT if it's registered as a
+//        "instance", as it's "magically" handled for us.  */
 
-    /* a instance handler also only hands us one request at a time, so
-       we don't need to loop over a list of requests; we'll only get one. */
+//     /* a instance handler also only hands us one request at a time, so
+//        we don't need to loop over a list of requests; we'll only get one. */
     
-    switch(reqinfo->mode) {
+//     switch(reqinfo->mode) {
 
-        case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
-                                     /* XXX: a pointer to the scalar's data */,
-                                     /* XXX: the length of the data in bytes */);
-            break;
+//         case MODE_GET:
+//             snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
+//                                      /* XXX: a pointer to the scalar's data */,
+//                                      /* XXX: the length of the data in bytes */);
+//             break;
 
-        /*
-         * SET REQUEST
-         *
-         * multiple states in the transaction.  See:
-         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
-         */
-        case MODE_SET_RESERVE1:
-                /* or you could use netsnmp_check_vb_type_and_size instead */
-            ret = netsnmp_check_vb_type(requests->requestvb, ASN_INTEGER);
-            if ( ret != SNMP_ERR_NOERROR ) {
-                netsnmp_set_request_error(reqinfo, requests, ret );
-            }
-            break;
+//         /*
+//          * SET REQUEST
+//          *
+//          * multiple states in the transaction.  See:
+//          * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+//          */
+//         case MODE_SET_RESERVE1:
+//                 /* or you could use netsnmp_check_vb_type_and_size instead */
+//             ret = netsnmp_check_vb_type(requests->requestvb, ASN_INTEGER);
+//             if ( ret != SNMP_ERR_NOERROR ) {
+//                 netsnmp_set_request_error(reqinfo, requests, ret );
+//             }
+//             break;
 
-        case MODE_SET_RESERVE2:
-            /* XXX malloc "undo" storage buffer */
-            if (/* XXX if malloc, or whatever, failed: */) {
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
-            }
-            break;
+//         case MODE_SET_RESERVE2:
+//             /* XXX malloc "undo" storage buffer */
+//             if (/* XXX if malloc, or whatever, failed: */) {
+//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
+//             }
+//             break;
 
-        case MODE_SET_FREE:
-            /* XXX: free resources allocated in RESERVE1 and/or
-               RESERVE2.  Something failed somewhere, and the states
-               below won't be called. */
-            break;
+//         case MODE_SET_FREE:
+//             /* XXX: free resources allocated in RESERVE1 and/or
+//                RESERVE2.  Something failed somewhere, and the states
+//                below won't be called. */
+//             break;
 
-        case MODE_SET_ACTION:
-            /* XXX: perform the value change here */
-            if (/* XXX: error? */) {
-                netsnmp_set_request_error(reqinfo, requests, /* some error */);
-            }
-            break;
+//         case MODE_SET_ACTION:
+//             /* XXX: perform the value change here */
+//             if (/* XXX: error? */) {
+//                 netsnmp_set_request_error(reqinfo, requests, /* some error */);
+//             }
+//             break;
 
-        case MODE_SET_COMMIT:
-            /* XXX: delete temporary storage */
-            if (/* XXX: error? */) {
-                /* try _really_really_ hard to never get to this point */
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
-            }
-            break;
+//         case MODE_SET_COMMIT:
+//             /* XXX: delete temporary storage */
+//             if (/* XXX: error? */) {
+//                 /* try _really_really_ hard to never get to this point */
+//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
+//             }
+//             break;
 
-        case MODE_SET_UNDO:
-            /* XXX: UNDO and return to previous value for the object */
-            if (/* XXX: error? */) {
-                /* try _really_really_ hard to never get to this point */
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
-            }
-            break;
+//         case MODE_SET_UNDO:
+//             /* XXX: UNDO and return to previous value for the object */
+//             if (/* XXX: error? */) {
+//                 /* try _really_really_ hard to never get to this point */
+//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
+//             }
+//             break;
 
-        default:
-            /* we should never get here, so this is a really bad error */
-            snmp_log(LOG_ERR, "unknown mode (%d) in handle_acRelay\n", reqinfo->mode );
-            return SNMP_ERR_GENERR;
-    }
+//         default:
+//             /* we should never get here, so this is a really bad error */
+//             snmp_log(LOG_ERR, "unknown mode (%d) in handle_acRelay\n", reqinfo->mode );
+//             return SNMP_ERR_GENERR;
+//     }
 
-    return SNMP_ERR_NOERROR;
-}
-int
-handle_acLed(netsnmp_mib_handler *handler,
-                          netsnmp_handler_registration *reginfo,
-                          netsnmp_agent_request_info   *reqinfo,
-                          netsnmp_request_info         *requests)
-{
-    int ret;
-    /* We are never called for a GETNEXT if it's registered as a
-       "instance", as it's "magically" handled for us.  */
+//     return SNMP_ERR_NOERROR;
+// }
+// int
+// handle_acLed(netsnmp_mib_handler *handler,
+//                           netsnmp_handler_registration *reginfo,
+//                           netsnmp_agent_request_info   *reqinfo,
+//                           netsnmp_request_info         *requests)
+// {
+//     int ret;
+//     /* We are never called for a GETNEXT if it's registered as a
+//        "instance", as it's "magically" handled for us.  */
 
-    /* a instance handler also only hands us one request at a time, so
-       we don't need to loop over a list of requests; we'll only get one. */
+//     /* a instance handler also only hands us one request at a time, so
+//        we don't need to loop over a list of requests; we'll only get one. */
     
-    switch(reqinfo->mode) {
+//     switch(reqinfo->mode) {
 
-        case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
-                                     /* XXX: a pointer to the scalar's data */,
-                                     /* XXX: the length of the data in bytes */);
-            break;
+//         case MODE_GET:
+//             snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
+//                                      /* XXX: a pointer to the scalar's data */,
+//                                      /* XXX: the length of the data in bytes */);
+//             break;
 
-        /*
-         * SET REQUEST
-         *
-         * multiple states in the transaction.  See:
-         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
-         */
-        case MODE_SET_RESERVE1:
-                /* or you could use netsnmp_check_vb_type_and_size instead */
-            ret = netsnmp_check_vb_type(requests->requestvb, ASN_INTEGER);
-            if ( ret != SNMP_ERR_NOERROR ) {
-                netsnmp_set_request_error(reqinfo, requests, ret );
-            }
-            break;
+//         /*
+//          * SET REQUEST
+//          *
+//          * multiple states in the transaction.  See:
+//          * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+//          */
+//         case MODE_SET_RESERVE1:
+//                 /* or you could use netsnmp_check_vb_type_and_size instead */
+//             ret = netsnmp_check_vb_type(requests->requestvb, ASN_INTEGER);
+//             if ( ret != SNMP_ERR_NOERROR ) {
+//                 netsnmp_set_request_error(reqinfo, requests, ret );
+//             }
+//             break;
 
-        case MODE_SET_RESERVE2:
-            /* XXX malloc "undo" storage buffer */
-            if (/* XXX if malloc, or whatever, failed: */) {
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
-            }
-            break;
+//         case MODE_SET_RESERVE2:
+//             /* XXX malloc "undo" storage buffer */
+//             if (/* XXX if malloc, or whatever, failed: */) {
+//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
+//             }
+//             break;
 
-        case MODE_SET_FREE:
-            /* XXX: free resources allocated in RESERVE1 and/or
-               RESERVE2.  Something failed somewhere, and the states
-               below won't be called. */
-            break;
+//         case MODE_SET_FREE:
+//             /* XXX: free resources allocated in RESERVE1 and/or
+//                RESERVE2.  Something failed somewhere, and the states
+//                below won't be called. */
+//             break;
 
-        case MODE_SET_ACTION:
-            /* XXX: perform the value change here */
-            if (/* XXX: error? */) {
-                netsnmp_set_request_error(reqinfo, requests, /* some error */);
-            }
-            break;
+//         case MODE_SET_ACTION:
+//             /* XXX: perform the value change here */
+//             if (/* XXX: error? */) {
+//                 netsnmp_set_request_error(reqinfo, requests, /* some error */);
+//             }
+//             break;
 
-        case MODE_SET_COMMIT:
-            /* XXX: delete temporary storage */
-            if (/* XXX: error? */) {
-                /* try _really_really_ hard to never get to this point */
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
-            }
-            break;
+//         case MODE_SET_COMMIT:
+//             /* XXX: delete temporary storage */
+//             if (/* XXX: error? */) {
+//                 /* try _really_really_ hard to never get to this point */
+//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
+//             }
+//             break;
 
-        case MODE_SET_UNDO:
-            /* XXX: UNDO and return to previous value for the object */
-            if (/* XXX: error? */) {
-                /* try _really_really_ hard to never get to this point */
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
-            }
-            break;
+//         case MODE_SET_UNDO:
+//             /* XXX: UNDO and return to previous value for the object */
+//             if (/* XXX: error? */) {
+//                 /* try _really_really_ hard to never get to this point */
+//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
+//             }
+//             break;
 
-        default:
-            /* we should never get here, so this is a really bad error */
-            snmp_log(LOG_ERR, "unknown mode (%d) in handle_acLed\n", reqinfo->mode );
-            return SNMP_ERR_GENERR;
-    }
+//         default:
+//             /* we should never get here, so this is a really bad error */
+//             snmp_log(LOG_ERR, "unknown mode (%d) in handle_acLed\n", reqinfo->mode );
+//             return SNMP_ERR_GENERR;
+//     }
 
-    return SNMP_ERR_NOERROR;
-}
+//     return SNMP_ERR_NOERROR;
+// }
 int
 handle_acLcd(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -279,9 +447,14 @@ handle_acLcd(netsnmp_mib_handler *handler,
     switch(reqinfo->mode) {
 
         case MODE_GET:
-            snmp_set_var_typed_value(requests->requestvb, ASN_OCTET_STR,
-                                     /* XXX: a pointer to the scalar's data */,
-                                     /* XXX: the length of the data in bytes */);
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+            snmp_set_var_typed_value(requests->requestvb,
+                                     ASN_OCTET_STR,
+                                     fake_lcd_display_string,
+                                     fake_lcd_display_string_len);
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
         /*
@@ -290,54 +463,58 @@ handle_acLcd(netsnmp_mib_handler *handler,
          * multiple states in the transaction.  See:
          * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
          */
-        case MODE_SET_RESERVE1:
-                /* or you could use netsnmp_check_vb_type_and_size instead */
-            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OCTET_STR);
-            if ( ret != SNMP_ERR_NOERROR ) {
-                netsnmp_set_request_error(reqinfo, requests, ret );
-            }
-            break;
+        // case MODE_SET_RESERVE1:
+        //         /* or you could use netsnmp_check_vb_type_and_size instead */
+        //     ret = netsnmp_check_vb_type(requests->requestvb, ASN_OCTET_STR);
+        //     if ( ret != SNMP_ERR_NOERROR ) {
+        //         netsnmp_set_request_error(reqinfo, requests, ret );
+        //     }
+        //     break;
 
-        case MODE_SET_RESERVE2:
-            /* XXX malloc "undo" storage buffer */
-            if (/* XXX if malloc, or whatever, failed: */) {
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
-            }
-            break;
+        // case MODE_SET_RESERVE2:
+        //     /* XXX malloc "undo" storage buffer */
+        //     if (/* XXX if malloc, or whatever, failed: */) {
+        //         netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
+        //     }
+        //     break;
 
-        case MODE_SET_FREE:
-            /* XXX: free resources allocated in RESERVE1 and/or
-               RESERVE2.  Something failed somewhere, and the states
-               below won't be called. */
-            break;
+        // case MODE_SET_FREE:
+        //     /* XXX: free resources allocated in RESERVE1 and/or
+        //        RESERVE2.  Something failed somewhere, and the states
+        //        below won't be called. */
+        //     break;
 
         case MODE_SET_ACTION:
-            /* XXX: perform the value change here */
-            if (/* XXX: error? */) {
-                netsnmp_set_request_error(reqinfo, requests, /* some error */);
-            }
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+		// request_dump(requests);
+		// for (int i = 0; i < requests->requestvb->; i++) {
+
+		// }
+		// fake_switch_status_led = *((int *) requests->requestvb->buf);
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
 
-        case MODE_SET_COMMIT:
-            /* XXX: delete temporary storage */
-            if (/* XXX: error? */) {
-                /* try _really_really_ hard to never get to this point */
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
-            }
-            break;
+        // case MODE_SET_COMMIT:
+        //     /* XXX: delete temporary storage */
+        //     if (/* XXX: error? */) {
+        //         /* try _really_really_ hard to never get to this point */
+        //         netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
+        //     }
+        //     break;
 
-        case MODE_SET_UNDO:
-            /* XXX: UNDO and return to previous value for the object */
-            if (/* XXX: error? */) {
-                /* try _really_really_ hard to never get to this point */
-                netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
-            }
-            break;
+        // case MODE_SET_UNDO:
+        //     /* XXX: UNDO and return to previous value for the object */
+        //     if (/* XXX: error? */) {
+        //         /* try _really_really_ hard to never get to this point */
+        //         netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
+        //     }
+        //     break;
 
-        default:
-            /* we should never get here, so this is a really bad error */
-            snmp_log(LOG_ERR, "unknown mode (%d) in handle_acLcd\n", reqinfo->mode );
-            return SNMP_ERR_GENERR;
+        // default:
+        //     /* we should never get here, so this is a really bad error */
+        //     snmp_log(LOG_ERR, "unknown mode (%d) in handle_acLcd\n", reqinfo->mode );
+        //     return SNMP_ERR_GENERR;
     }
 
     return SNMP_ERR_NOERROR;
