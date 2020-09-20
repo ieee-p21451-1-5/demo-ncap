@@ -14,8 +14,9 @@
 #include	<stdio.h>
 #include	<time.h>
 
+#include	"ieeeP1451Utils.h"
+
 #define		CHAR_ARRAY_SIZE		20
-#define		BYTE_NUM_PER_LINE	16
 
 /**** Fake Sensors ****/
 
@@ -42,137 +43,6 @@ int	fake_switch_status_led				= 0;
 char	fake_lcd_display_string[CHAR_ARRAY_SIZE]	= "Hello, world!";
 /* does not include the null character */
 int	fake_lcd_display_string_len			= 13;
-
-/* returns a float value ranging from 0. to 1. */
-float	randf()
-{
-	return ((float) rand()) / ((float) RAND_MAX);
-}
-
-/**** Tool Functions for Understanding Net-SNMP Data Structure****/
-
-
-void	print_oid(oid *name, size_t name_length)
-{
-	/* XXX: the variable type & size might be buggy */
-	int i;
-	printf("%u", name[0]);
-	for (i = 1; i < name_length; i++) {
-		printf(".%u", name[i]);
-	}
-}
-
-void	print_printable(unsigned char c)
-{
-	if (c >= 0x20 && c <= 0x7e) {
-		printf("%c", c);
-	} else {
-		switch (c) {
-		case 0x00:
-			printf("\\0");
-			break;
-		case 0x09:
-			printf("\\t");
-			break;
-		case 0x0a:
-			printf("\\n");
-			break;
-		case 0x0d:
-			printf("\\r");
-			break;
-		default:
-			printf(".");
-		}
-	}
-}
-
-void	print_var_binding_s_value_part(netsnmp_variable_list *requestvb)
-{
-	netsnmp_vardata	val		= requestvb->val;
-	u_char		type		= requestvb->type;
-	size_t		val_len		= requestvb->val_len;
-	u_char		*buf		= requestvb->buf;
-	int		i;
-	int		newline_cnt;
-
-	/* TODO: complete all possible types */
-	switch (type) {
-	case 2U:
-		/* snmpset with `i' type indicator */
-		printf("%d", *(val.integer));
-		break;
-
-	case 4U:
-		/* snmpset with `s/d/x' type indicator */
-		// printf("%s", val.string);
-		for (i = 0; i < val_len; i++) {
-			print_printable(val.string[i]);
-		}
-
-		printf("\n  ");
-
-		/* see what buf[] holds */
-		newline_cnt = 0;
-		for (i = 0; i < val_len; i++) {
-			printf("%02x ", buf[i]);
-			if (++newline_cnt >= BYTE_NUM_PER_LINE) {
-				newline_cnt = 0;
-				printf("\n  ");
-			}
-		}
-		break;
-	case 6U:
-		/* snmpset with `o' type indicator */
-		/* XXX: the variable type & size might be buggy */
-		print_oid(val.objid, val_len/sizeof(oid)); 
-		break;
-	case 64U:
-		/* snmpset with `a' type indicator */
-		printf("%u.%u.%u.%u", val.bitstring[0],
-		                      val.bitstring[1],
-		                      val.bitstring[2],
-		                      val.bitstring[3]);
-		break;
-	case 66U:
-		/* snmpset with `u' type indicator */
-		/* XXX: the variable type & size might be buggy */ 
-		/* though tested OK: 0 ~ 4294967295 */
-		printf("%d", *((unsigned long *) val.integer));
-		break;
-	case 67U:
-		/* snmpset with `t' type indicator */
-		/* TODO */
-		break;
-	default:
-		break;
-	}
-}
-
-void	request_dump(netsnmp_request_info *requests)
-{
-	/* XXX: the variable type & size might be buggy */
-	/*
-	  some typedefs on dell Ubuntu (not on Pi)
-	  oid		u_long
-	  name_length	size_t (always)
-	  type		u_char (always)
-	*/	
-	printf("────────────────SNMP request dump────────────────\n");
-	printf("name_len:       %u\n", requests->requestvb->name_length);
-	// printf("	name:		");
-	// print_objid(requests->requestvb->name, requests->requestvb->name_length);
-	printf("name:           ");
-	print_oid(requests->requestvb->name, requests->requestvb->name_length);
-	printf("\n");
-	printf("type:           %u\n", requests->requestvb->type);
-	printf("val_len:        %u\n", requests->requestvb->val_len);
-	printf("value:          ");
-	print_var_binding_s_value_part(requests->requestvb);
-	// print_value()
-	printf("\n");
-
-	printf("─────────────────────────────────────────────────\n");
-}
 
 /* NOTE: customized code of `ncap-demo' project ENDS here */
 
@@ -438,6 +308,13 @@ handle_acLcd(netsnmp_mib_handler *handler,
                           netsnmp_request_info         *requests)
 {
     int ret;
+    /* NOTE: customized code of `ncap-demo' project STARTS here */
+
+    int i;
+
+    /* NOTE: customized code of `ncap-demo' project ENDS here */
+
+
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -486,11 +363,18 @@ handle_acLcd(netsnmp_mib_handler *handler,
 
         case MODE_SET_ACTION:
 		/* NOTE: customized code of `ncap-demo' project STARTS here */
-		// request_dump(requests);
-		// for (int i = 0; i < requests->requestvb->; i++) {
 
-		// }
-		// fake_switch_status_led = *((int *) requests->requestvb->buf);
+		/* does not include the null character */
+		fake_lcd_display_string_len = requests->requestvb->val_len;
+
+		/* copy data */
+		for (i = 0; i < fake_lcd_display_string_len; i++) {
+			fake_lcd_display_string[i] = (requests->requestvb->val).string[i];
+		}
+		/* append the null character for normal C lang strings */
+		fake_lcd_display_string[i] = '\0';
+		
+		printf("%s\n", fake_lcd_display_string);
 
 		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;
