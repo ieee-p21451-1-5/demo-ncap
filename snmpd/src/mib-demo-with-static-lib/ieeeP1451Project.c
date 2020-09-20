@@ -16,7 +16,8 @@
 
 #include	"ieeeP1451Utils.h"
 
-#define		CHAR_ARRAY_SIZE		20
+/* XXX: make enough space available, or bugs may show up */
+#define		CHAR_ARRAY_SIZE		1024
 
 /**** Fake Sensors ****/
 
@@ -38,11 +39,37 @@ int	fake_sensor_data_length_pressure		= 6;
 
 /* Some virtual actuators for clients to control. */
 /* Since no real actuators exist either, we call them `fake' ones. */
-int	fake_switch_status_relay			= 0;
-int	fake_switch_status_led				= 0;
+long	fake_switch_status_relay			= 0;
+long	fake_switch_status_led				= 0;
 char	fake_lcd_display_string[CHAR_ARRAY_SIZE]	= "Hello, world!";
 /* does not include the null character */
 int	fake_lcd_display_string_len			= 13;
+
+/* TODO: move these to library */
+
+void	print_printable_chars_in_a_string(unsigned char *s, int len)
+{
+	int i;
+	for (i = 0; i < len; i++)
+		print_printable(s[i]);
+}
+
+void	dumped_output(unsigned char *s, int len)
+{
+	int i;
+	int newline_cnt;
+	char indent_preceding_each_line[] = "    ";
+
+	printf("%s", indent_preceding_each_line);
+	newline_cnt = 0;
+	for (i = 0; i < len; i++) {
+		printf("%02x ", s[i]);
+		if (++newline_cnt >= BYTE_NUM_PER_LINE) {
+			newline_cnt = 0;
+			printf("\n%s", indent_preceding_each_line);
+		}
+	}
+}
 
 /* NOTE: customized code of `ncap-demo' project ENDS here */
 
@@ -68,16 +95,16 @@ init_ieeeP1451Project(void)
 //                                sePressure_oid, OID_LENGTH(sePressure_oid),
 //                                HANDLER_CAN_RONLY
 //         ));
-//     netsnmp_register_scalar(
-//         netsnmp_create_handler_registration("acRelay", handle_acRelay,
-//                                acRelay_oid, OID_LENGTH(acRelay_oid),
-//                                HANDLER_CAN_RWRITE
-//         ));
-//     netsnmp_register_scalar(
-//         netsnmp_create_handler_registration("acLed", handle_acLed,
-//                                acLed_oid, OID_LENGTH(acLed_oid),
-//                                HANDLER_CAN_RWRITE
-//         ));
+    netsnmp_register_scalar(
+        netsnmp_create_handler_registration("acRelay", handle_acRelay,
+                               acRelay_oid, OID_LENGTH(acRelay_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+    netsnmp_register_scalar(
+        netsnmp_create_handler_registration("acLed", handle_acLed,
+                               acLed_oid, OID_LENGTH(acLed_oid),
+                               HANDLER_CAN_RWRITE
+        ));
     netsnmp_register_scalar(
         netsnmp_create_handler_registration("acLcd", handle_acLcd,
                                acLcd_oid, OID_LENGTH(acLcd_oid),
@@ -143,20 +170,114 @@ init_ieeeP1451Project(void)
 
 //     return SNMP_ERR_NOERROR;
 // }
-// int
-// handle_acRelay(netsnmp_mib_handler *handler,
-//                           netsnmp_handler_registration *reginfo,
-//                           netsnmp_agent_request_info   *reqinfo,
-//                           netsnmp_request_info         *requests)
-// {
-//     int ret;
-//     /* We are never called for a GETNEXT if it's registered as a
-//        "instance", as it's "magically" handled for us.  */
+int
+handle_acRelay(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
 
-//     /* a instance handler also only hands us one request at a time, so
-//        we don't need to loop over a list of requests; we'll only get one. */
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
     
-//     switch(reqinfo->mode) {
+    switch(reqinfo->mode) {
+
+        // case MODE_GET:
+        //     snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
+        //                              /* XXX: a pointer to the scalar's data */,
+        //                              /* XXX: the length of the data in bytes */);
+        //     break;
+
+        // /*
+        //  * SET REQUEST
+        //  *
+        //  * multiple states in the transaction.  See:
+        //  * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+        //  */
+        // case MODE_SET_RESERVE1:
+        //         /* or you could use netsnmp_check_vb_type_and_size instead */
+        //     ret = netsnmp_check_vb_type(requests->requestvb, ASN_INTEGER);
+        //     if ( ret != SNMP_ERR_NOERROR ) {
+        //         netsnmp_set_request_error(reqinfo, requests, ret );
+        //     }
+        //     break;
+
+        // case MODE_SET_RESERVE2:
+        //     /* XXX malloc "undo" storage buffer */
+        //     if (/* XXX if malloc, or whatever, failed: */) {
+        //         netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
+        //     }
+        //     break;
+
+        // case MODE_SET_FREE:
+        //     /* XXX: free resources allocated in RESERVE1 and/or
+        //        RESERVE2.  Something failed somewhere, and the states
+        //        below won't be called. */
+        //     break;
+
+        case MODE_SET_ACTION:
+		/* NOTE: customized code of `ncap-demo' project STARTS here */
+
+		/**** Different ways of fetching the data inside SNMP SET request ****/
+
+		/* Treat the bytes in the data part of the request message as */
+		/* `int' type and assign the target variable with the `int' variable's value */
+		fake_switch_status_relay = *((int *) requests->requestvb->buf);
+		printf("The value of the integer has just been updated: %d\n", fake_switch_status_relay);
+
+		/* Copy the contents of the specific part in request message */
+		memcpy(&fake_switch_status_relay, requests->requestvb->buf, 4);
+		printf("The value of the integer has just been updated: %d\n", fake_switch_status_relay);
+
+		/* Use the encapsulated type `netsnmp_vardata' and directly assign the value */
+		fake_switch_status_relay = *((requests->requestvb->val).integer);
+		printf("The value of the integer has just been updated: %d\n", fake_switch_status_relay);
+
+
+		/* NOTE: customized code of `ncap-demo' project ENDS here */
+            break;
+
+        // case MODE_SET_COMMIT:
+        //     /* XXX: delete temporary storage */
+        //     if (/* XXX: error? */) {
+        //         /* try _really_really_ hard to never get to this point */
+        //         netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
+        //     }
+        //     break;
+
+        // case MODE_SET_UNDO:
+        //     /* XXX: UNDO and return to previous value for the object */
+        //     if (/* XXX: error? */) {
+        //         /* try _really_really_ hard to never get to this point */
+        //         netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
+        //     }
+        //     break;
+
+        // default:
+        //     /* we should never get here, so this is a really bad error */
+        //     snmp_log(LOG_ERR, "unknown mode (%d) in handle_acRelay\n", reqinfo->mode );
+        //     return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+int
+handle_acLed(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
 
 //         case MODE_GET:
 //             snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
@@ -191,91 +312,8 @@ init_ieeeP1451Project(void)
 //                below won't be called. */
 //             break;
 
-//         case MODE_SET_ACTION:
-//             /* XXX: perform the value change here */
-//             if (/* XXX: error? */) {
-//                 netsnmp_set_request_error(reqinfo, requests, /* some error */);
-//             }
-//             break;
-
-//         case MODE_SET_COMMIT:
-//             /* XXX: delete temporary storage */
-//             if (/* XXX: error? */) {
-//                 /* try _really_really_ hard to never get to this point */
-//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_COMMITFAILED);
-//             }
-//             break;
-
-//         case MODE_SET_UNDO:
-//             /* XXX: UNDO and return to previous value for the object */
-//             if (/* XXX: error? */) {
-//                 /* try _really_really_ hard to never get to this point */
-//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_UNDOFAILED);
-//             }
-//             break;
-
-//         default:
-//             /* we should never get here, so this is a really bad error */
-//             snmp_log(LOG_ERR, "unknown mode (%d) in handle_acRelay\n", reqinfo->mode );
-//             return SNMP_ERR_GENERR;
-//     }
-
-//     return SNMP_ERR_NOERROR;
-// }
-// int
-// handle_acLed(netsnmp_mib_handler *handler,
-//                           netsnmp_handler_registration *reginfo,
-//                           netsnmp_agent_request_info   *reqinfo,
-//                           netsnmp_request_info         *requests)
-// {
-//     int ret;
-//     /* We are never called for a GETNEXT if it's registered as a
-//        "instance", as it's "magically" handled for us.  */
-
-//     /* a instance handler also only hands us one request at a time, so
-//        we don't need to loop over a list of requests; we'll only get one. */
-    
-//     switch(reqinfo->mode) {
-
-//         case MODE_GET:
-//             snmp_set_var_typed_value(requests->requestvb, ASN_INTEGER,
-//                                      /* XXX: a pointer to the scalar's data */,
-//                                      /* XXX: the length of the data in bytes */);
-//             break;
-
-//         /*
-//          * SET REQUEST
-//          *
-//          * multiple states in the transaction.  See:
-//          * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
-//          */
-//         case MODE_SET_RESERVE1:
-//                 /* or you could use netsnmp_check_vb_type_and_size instead */
-//             ret = netsnmp_check_vb_type(requests->requestvb, ASN_INTEGER);
-//             if ( ret != SNMP_ERR_NOERROR ) {
-//                 netsnmp_set_request_error(reqinfo, requests, ret );
-//             }
-//             break;
-
-//         case MODE_SET_RESERVE2:
-//             /* XXX malloc "undo" storage buffer */
-//             if (/* XXX if malloc, or whatever, failed: */) {
-//                 netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_RESOURCEUNAVAILABLE);
-//             }
-//             break;
-
-//         case MODE_SET_FREE:
-//             /* XXX: free resources allocated in RESERVE1 and/or
-//                RESERVE2.  Something failed somewhere, and the states
-//                below won't be called. */
-//             break;
-
-//         case MODE_SET_ACTION:
-//             /* XXX: perform the value change here */
-//             if (/* XXX: error? */) {
-//                 netsnmp_set_request_error(reqinfo, requests, /* some error */);
-//             }
-//             break;
+        case MODE_SET_ACTION:
+            break;
 
 //         case MODE_SET_COMMIT:
 //             /* XXX: delete temporary storage */
@@ -297,10 +335,10 @@ init_ieeeP1451Project(void)
 //             /* we should never get here, so this is a really bad error */
 //             snmp_log(LOG_ERR, "unknown mode (%d) in handle_acLed\n", reqinfo->mode );
 //             return SNMP_ERR_GENERR;
-//     }
+    }
 
-//     return SNMP_ERR_NOERROR;
-// }
+    return SNMP_ERR_NOERROR;
+}
 int
 handle_acLcd(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -368,13 +406,23 @@ handle_acLcd(netsnmp_mib_handler *handler,
 		fake_lcd_display_string_len = requests->requestvb->val_len;
 
 		/* copy data */
-		for (i = 0; i < fake_lcd_display_string_len; i++) {
+		/* TODO: there is risk of memory leakage */
+		for (i = 0; i < fake_lcd_display_string_len; i++)
 			fake_lcd_display_string[i] = (requests->requestvb->val).string[i];
-		}
-		/* append the null character for normal C lang strings */
-		fake_lcd_display_string[i] = '\0';
-		
-		printf("%s\n", fake_lcd_display_string);
+
+		// /* append the null character for normal C lang strings */
+		// fake_lcd_display_string[i] = '\0';		
+		// printf("%s\n", fake_lcd_display_string);
+
+		printf("The value of the string has just been updated:\n");
+		print_printable_chars_in_a_string(fake_lcd_display_string, fake_lcd_display_string_len);
+		printf("\n");
+
+		printf("\n");
+
+		printf("Hex-dumped output:\n");
+		dumped_output(fake_lcd_display_string, fake_lcd_display_string_len);
+		printf("\n");
 
 		/* NOTE: customized code of `ncap-demo' project ENDS here */
             break;

@@ -379,14 +379,18 @@ snmptranslate -Tp IEEE-P1451-SIMPLE-DEMO-MIB::sjtu
          |
          +-- -RW- Integer32 acRelay(1)
          +-- -RW- Integer32 acLed(2)
+         +-- -RW- String    acLcd(3)
+                  Textual Convention: DisplayString
+                  Size: 0..255
 ```
 
 <!---验证过了-->
 
 ```shell
 cd /root/demo-ncap/snmpd/tmp/
-mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 ```
+
+mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 
 2 - 1
 
@@ -394,22 +398,20 @@ mib2c IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 mib2c -c mib2c.scalar.conf IEEE-P1451-SIMPLE-DEMO-MIB::ieeeP1451Project
 ```
 
-[ieeeP1451Project.c](snmpd/source/mib_demo_auto_generated/ieeeP1451Project.c)
+[ieeeP1451Project.c](snmpd/src/mib-demo-auto-generated/ieeeP1451Project.c)
 
-[ieeeP1451Project.h](snmpd/source/mib_demo_auto_generated/ieeeP1451Project.h)
+[ieeeP1451Project.h](snmpd/src/mib-demo-auto-generated/ieeeP1451Project.h)
 
 
+
+<!---分歧点-->
 
 modified:
 
-[ieeeP1451Project.c](snmpd/source/mib_demo/ieeeP1451Project.c)
-
-
-
-
+[ieeeP1451Project.c](snmpd/src/mib_demo/ieeeP1451Project.c) **TODO**
 
 ```shell
-cp /root/demo-ncap/snmpd/source/mib_demo/* ${NET_SNMP_SRC_ROOT}/agent/mibgroup/
+cp /root/demo-ncap/snmpd/source/mib-demo/* ${NET_SNMP_SRC_ROOT}/agent/mibgroup/
 ```
 
 ```shell
@@ -446,8 +448,12 @@ IEEE-P1451-SIMPLE-DEMO-MIB::seTemperature.0 = STRING: 23.77
 ➜  ~ snmpget -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::sePressure.0 
 IEEE-P1451-SIMPLE-DEMO-MIB::sePressure.0 = STRING: 101.86
 
-```
 
+snmpset -v 2c -c public localhost IEEE-P1451-SIMPLE-DEMO-MIB::acLcd.0 x "$(echo {0,1,2,3,4,5,6,7,8,9,a,b,c,d,e}{0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f})" > /dev/null
+
+snmpset -v 2c -c public localhost 1.3.6.1.4.1.7934.1451.2.3.0 x "$(echo {0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f}{0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f})" > /dev/null
+```
+brace expansion
 ```shell
 make && make install
 ```
