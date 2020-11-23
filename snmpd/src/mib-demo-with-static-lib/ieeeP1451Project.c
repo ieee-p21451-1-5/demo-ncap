@@ -223,18 +223,24 @@ handle_acRelay(netsnmp_mib_handler *handler,
 
 		/**** Different ways of fetching the data inside SNMP SET request ****/
 
+		/*
+		 * XXX: beware of C types
+		 * 1. casting 
+		 * 2. place holders in printf() 
+		 */
+		printf("data len:%d\n", requests->requestvb->val_len);
 		/* Treat the bytes in the data part of the request message as */
 		/* `int' type and assign the target variable with the `int' variable's value */
-		fake_switch_status_relay = *((int *) requests->requestvb->buf);
-		printf("The value of the integer has just been updated: %d\n", fake_switch_status_relay);
+		fake_switch_status_relay = *((long *) requests->requestvb->buf);
+		printf("The value of the integer has just been updated: %ld\n", fake_switch_status_relay);
 
 		/* Copy the contents of the specific part in request message */
-		memcpy(&fake_switch_status_relay, requests->requestvb->buf, 4);
-		printf("The value of the integer has just been updated: %d\n", fake_switch_status_relay);
+		memcpy(&fake_switch_status_relay, requests->requestvb->buf, requests->requestvb->val_len);
+		printf("The value of the integer has just been updated: %ld\n", fake_switch_status_relay);
 
 		/* Use the encapsulated type `netsnmp_vardata' and directly assign the value */
-		fake_switch_status_relay = *((requests->requestvb->val).integer);
-		printf("The value of the integer has just been updated: %d\n", fake_switch_status_relay);
+		fake_switch_status_relay = *(requests->requestvb->val.integer);
+		printf("The value of the integer has just been updated: %ld\n", fake_switch_status_relay);
 
 
 		/* NOTE: customized code of `ncap-demo' project ENDS here */
@@ -408,7 +414,7 @@ handle_acLcd(netsnmp_mib_handler *handler,
 		/* copy data */
 		/* TODO: there is risk of memory leakage */
 		for (i = 0; i < fake_lcd_display_string_len; i++)
-			fake_lcd_display_string[i] = (requests->requestvb->val).string[i];
+			fake_lcd_display_string[i] = requests->requestvb->val.string[i];
 
 		// /* append the null character for normal C lang strings */
 		// fake_lcd_display_string[i] = '\0';		
