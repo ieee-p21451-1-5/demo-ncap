@@ -92,8 +92,6 @@ yum -y update && yum -y install vim
   dmesg -D
   ```
 
-<!---other useful softwares: zsh (with plugin) lrzsz-->
-
 ## 2. Installing `net-snmp`
 
 This tutorial continues, assuming you are the super user. It makes things easy but is **strongly recommended against** in practical deployment.
@@ -103,15 +101,17 @@ For those who are strict with security and resist taking this risk (which is goo
 - **A lot of** commands need privileges to be run and therefore `sudo` should precede them.
 - When `sudo`ing, pay attention to the environment, e.g. (and especially) `$PATH` .
 
-<!--- sudo how to specify PATH? -->
+<!-- TODO: sudo 怎么指定 $PATH? -->
 
 ### 2.1 Dependencies 
 
 ```shell
-yum -y install gcc file perl-devel perl-Data-Dumper
+yum -y install gcc file perl-devel perl-Data-Dumper python-devel
 ```
 
-<!--- 其中perl-Data-Dumper是运行snmpconf -g basic_setup所必需的，如果不运行这个程序，可能也不需要这个依赖 -->
+<!-- 其中 perl-Data-Dumper 是运行 snmpconf -g basic_setup 所必需的，如果不运行这个命令，可能也不需要这个依赖 -->
+
+<!-- python-devel 是 C 调用 python 所必需的 -->
 
 ### 2.2 Basic Installation
 
@@ -143,9 +143,9 @@ Start building the software:
 && make && make install
 ```
 
-<!---agent选项的作用体现在哪？它也没有生成一个初始的snmpd.conf啊？-->
+<!-- with-sys-contact 和 with-sys-location 两个选项会指定 sysContact (1.3.6.1.2.1.1.4) 和 sysLocation (1.3.6.1.2.1.1.6) 两个管理信息的值。 与此同时，配置文件 snmpd.conf 也能指定这两个管理信息的值。 -->
 
-<!---这些选项确实有在起作用，如果snmpd.conf-->
+<!-- 这里编译选项的作用不是说会自动生成一个 snmpd.conf 文件，而是在头文件中添加宏定义 NETSNMP_SYS_LOC 和 NETSNMP_SYS_CONTACT。snmpd 运行时，会先查看 snmpd.conf 中是否有指定这两个管理信息的字段，如果有，则返回配置文件中的值。如果没有，再去查看宏定义，返回编译选项里的值。详见源码。 -->
 
 > **Explanation:**
 >
@@ -153,7 +153,7 @@ Start building the software:
 >
 > For each option's meaning, run `configure` without any option and see what it prompts. Modify the value part in these options if you would like to. 
 >
-> <!--- or use "--with-defaults"  -->
+> <!-- or use "--with-defaults"  -->
 >
 > The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET_SNMP_HOME}`. In the command above, we explicitly set `${NET_SNMP_HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you execute certain commands later.
 >
@@ -168,7 +168,7 @@ Start building the software:
   | `mibII/interfaces.[ch]` | 1.3.6.1.2.1.2  (mib-2.interfaces) |
   | `mibII/ip.[ch]`         | 1.3.6.1.2.1.4 (mib-2.ip)          |
 
-  <!---TODO 这些源码要好好研究一下 -->
+  <!-- TODO: 这些源码要好好研究一下 -->
 
   The code for your custom MIBs will also be put here.
 
@@ -180,12 +180,12 @@ Start building the software:
 
 - `${NET_SNMP_HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations for storing configuration files. See `man snmp_config` for more information.)
 
-#### Client
+#### Client 
 
 Once the installation finishes, you should be able to run: 
 
 ```shell
-snmpget -v 2c -c public 47.88.61.169 1.3.6.1.2.1.1.1.0
+snmpget -v 2c -c public 106.14.14.168 1.3.6.1.2.1.1.1.0
 ```
 
 and you should see results similar to:
@@ -200,11 +200,35 @@ SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, S
 >
 > - `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
 > - `-c public` sets the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings introduce bare-bones security feature in SNMPv1 and SNMPv2.
-> - `47.88.61.169` specifies the destination of SNMP requests. An SNMP server (indeed, an NCAP) maintained by IEEE P21451-1-5 Working Group listens to this address.
-> - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID in its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
+> - `106.14.14.168` specifies the destination of SNMP requests. An SNMP server maintained by IEEE P21451-1-5 Working Group listens to this address.
+> - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID as its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number and different layers are separated by a period. Such a numeric way of displaying OID can be translated into a textual, human-readable one. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly accepted OIDs can be found on [this page](http://www.oid-info.com/).  
 >
 
-[More Client Program Examples](client-examples.md) <!---TODO or present an snmpset example like above-->
+In order to get a group of variables all at once:
+
+
+```shell
+snmpwalk -v 2c -c public 106.14.14.168 1.3.6.1.2.1.1
+```
+and you should see results similar to:
+
+```
+SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, Shanghai Jiao Tong University, Shanghai, China
+SNMPv2-MIB::sysObjectID.0 = OID: NET-SNMP-MIB::netSnmpAgentOIDs.10
+DISMAN-EVENT-MIB::sysUpTimeInstance = Timeticks: (4710) 0:00:47.10
+SNMPv2-MIB::sysContact.0 = STRING: Jun WU <junwuhn@sjtu.edu.cn>
+SNMPv2-MIB::sysName.0 = STRING: public-snmp-server
+SNMPv2-MIB::sysLocation.0 = STRING: Shanghai, China
+...
+```
+
+Besides *getting* variables' value, you can also *set* some of them:
+
+# TODO
+
+<!-- TODO:  规范demo MIB； 给一个SET例子 --> 
+
+All the client programs in the above examples send SNMP requests and receive SNMP responses. `net-snmp` also provides useful tool programs like `snmptranslate`, which doesn't actually send or receive any packets. Run `man snmptranslate` or go to [the online manual page](http://www.net-snmp.org/docs/man/snmptranslate.html) for more information.
 
 #### Server
 
@@ -226,11 +250,7 @@ Next we should craft a bare-bones configuration file.
 echo -e "rwcommunity\tpublic" > /usr/local/share/snmp/snmpd.conf
 ```
 
-**/\* The following contents are still under construction \*/**
-
-**/\* See you soon :) \*/**
-
-<!---snmpd若要运行，至少需要这么一条access control相关的配置-->
+<!-- snmpd若要运行，至少需要这么一条access control相关的配置-->
 
 The above command creates a configuration file `snmpd.conf` with a single line:
 
@@ -248,7 +268,7 @@ snmpd -Lo -af
 
 > **Explanation:**
 >
-> `snmpd` is the SNMP daemon program in `net-snmp` package that accepts incoming SNMP requests and sends response messages. By default, it listens on UDP port 161 on all IPv4 interfaces.
+> `snmpd` is the SNMP daemon program provided in `net-snmp` package that accepts incoming SNMP requests and sends back response messages. By default, it listens on UDP port 161 on all IPv4 interfaces.
 >
 > - `-Lo` says the daemon program will output its log to `stdout`. 
 > - `-a` makes the program display the source address of incoming packets.
@@ -276,6 +296,8 @@ Since Raspberry Pi doesn't have any [RTC](https://en.wikipedia.org/wiki/Real-tim
 Besides, we will create a logging service named `snmpd-traffic.service` using `tcpdump`.
 
 First, install some dependencies:
+
+# TODO 前面的用树莓派再验证一下
 
 ```shell
 yum -y install git ntp tcpdump
