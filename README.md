@@ -1,5 +1,13 @@
 # Tutorial: How to set up an NCAP that provides IEEE P21451-1-5 services
 
+> **NOTICE**
+>
+> This repository was mainly used at [INTEROP 2020](http://www.ieeeiciea.org/iecon2020/download/InterOp_IES_IECON2020_r7.pdf) for other working groups to set up their devices and networks that are interoperable with ours.
+>
+> *Some information is outdated as of 2022*. For example, that specific server mentioned in this article and used for our test purposes has been shut down.
+>
+> That being said, we are considering revising this repository, and making the code and docs generic as well as informational. Hopefully the revised contents can remain fresh and applicable over time.
+
 ## 1. Prerequisites
 
 - A Raspberry Pi 3B or alternatively, a PC.
