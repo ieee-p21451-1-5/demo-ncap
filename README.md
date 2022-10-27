@@ -330,12 +330,13 @@ It is recommended to add these two lines into the initialization scripts for you
 
 First, create your custom MIB file conforming to [SMI](https://en.wikipedia.org/wiki/Structure_of_Management_Information) specifications, that defines what variables (management information) you wish to read and write remotely with SNMP. Native MIB files distributed within `net-snmp` source tree are located under `${NET_SNMP_PREFIX}/share/snmp/mibs/`. They are good references and could be your starting point of writing your custom MIBs.
 
-For convenience, we provide you with [a simple example](snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt). This MIB defines two sensors (read-only) and two actuators (read-write), and we are going to access them using SNMP.
+For convenience, we provide you with [a simple example](https://github.com/ieee-p21451-1-5/net-snmp/blob/demo-5.9.1/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt). This MIB defines two sensors (read-only) and two actuators (read-write), and we are going to access them using SNMP.
 
 Put this example (or your own file) to the right place:
 
 ```shell
-cp /root/demo-ncap/snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt ${NET_SNMP_PREFIX}/share/snmp/mibs/
+wget -O ${NET_SNMP_PREFIX}/share/snmp/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt \
+    https://github.com/ieee-p21451-1-5/net-snmp/blob/demo-5.9.1/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt?raw=true
 ```
 
 Make sure that binaries of `net-snmp` can correctly find and load the file, by looking up one of your custom management information entries. In our example:

@@ -3,11 +3,6 @@
 # top-most EditorConfig file
 root = true
 
-# MIB files
-[*.txt]
-indent_style = tab
-tab_width = 8
-
 # Scripts
 [*.{awk,sh}]
 indent_style = space
