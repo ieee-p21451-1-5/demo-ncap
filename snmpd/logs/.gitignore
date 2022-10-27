@@ -1,0 +1,3 @@
+# Reserved for log files. Git will only track an empty directory.
+*
+!.gitignore
