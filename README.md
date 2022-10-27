@@ -188,6 +188,7 @@ In order to get a group of variables all at once:
 ```shell
 snmpwalk -v 2c -c public 106.14.14.168 1.3.6.1.2.1.1
 ```
+
 and you should see results similar to:
 
 ```
