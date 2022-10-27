@@ -148,7 +148,7 @@ make && make install
 >
 > For each option's meaning, run `./configure` without any option and see what it prompts. Modify the value part in these options if you would like to.
 >
-> The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET_SNMP_HOME}`. In the command above, we explicitly set `${NET_SNMP_HOME}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you issue certain commands later.
+> The last option specifies the target directory of installation, which defaults to `/usr/local`. We denote this directory as `${NET_SNMP_PREFIX}`. In the command above, we explicitly set `${NET_SNMP_PREFIX}` to its default value.  If a none-default value is specified, you may have to type in the full pathname of the program when you issue certain commands later.
 >
 
 #### Important directories and files of `net-snmp`
@@ -163,10 +163,10 @@ make && make install
 
   This is also where you will craft your own code for your custom MIBs.
 
-- `${NET_SNMP_HOME}/bin/`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
-- `${NET_SNMP_HOME}/sbin/snmpd`: SNMP daemon (server) program
-- `${NET_SNMP_HOME}/share/snmp/mibs/*.txt`: MIB files in textual format
-- `${NET_SNMP_HOME}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations for storing configuration files. See [`snmp_config(5)`](http://www.net-snmp.org/docs/man/snmp_config.html) for more information.)
+- `${NET_SNMP_PREFIX}/bin/`: SNMP client programs (like `snmpget`), utilities (like `mib2c`)
+- `${NET_SNMP_PREFIX}/sbin/snmpd`: SNMP daemon (server) program
+- `${NET_SNMP_PREFIX}/share/snmp/mibs/*.txt`: MIB files in textual format
+- `${NET_SNMP_PREFIX}/share/snmp/snmpd.conf`: `snmpd` configuration file (There are other possible locations for storing configuration files. See [`snmp_config(5)`](http://www.net-snmp.org/docs/man/snmp_config.html) for more information.)
 
 #### Client
 
@@ -324,26 +324,26 @@ tail -f $(ls /root/demo-ncap/snmpd/logs/snmpd-traffic-log-* | sort | tail -n 1) 
 
 We assume that:
 
-- You've installed `net-snmp` to `/usr/local/`, which will be referred to as `${NET_SNMP_HOME}`.
+- You've installed `net-snmp` to `/usr/local/`, which will be referred to as `${NET_SNMP_PREFIX}`.
 - The source is extracted and put under `/root/net-snmp-5.7.3/`, which will be referred to as `${NET_SNMP_SRC_ROOT}`.
 
 Run the following commands:
 
 ```shell
-export NET_SNMP_HOME="/usr/local"
+export NET_SNMP_PREFIX="/usr/local"
 export NET_SNMP_SRC_ROOT="/root/net-snmp-5.7.3"
 ```
 
 It is recommended to add these two lines into the initialization scripts for your shell, e.g. `~/.bashrc`.
 
-First, create your custom MIB file conforming to [SMI](https://en.wikipedia.org/wiki/Structure_of_Management_Information) specifications, that defines what variables (management information) you wish to read and write remotely with SNMP. Native MIB files distributed within `net-snmp` source tree are located under `${NET_SNMP_HOME}/share/snmp/mibs/`. They are good references and could be your starting point of writing your custom MIBs.
+First, create your custom MIB file conforming to [SMI](https://en.wikipedia.org/wiki/Structure_of_Management_Information) specifications, that defines what variables (management information) you wish to read and write remotely with SNMP. Native MIB files distributed within `net-snmp` source tree are located under `${NET_SNMP_PREFIX}/share/snmp/mibs/`. They are good references and could be your starting point of writing your custom MIBs.
 
 For convenience, we provide you with [a simple example](snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt). This MIB defines two sensors (read-only) and two actuators (read-write), and we are going to access them using SNMP.
 
 Put this example (or your own file) to the right place:
 
 ```shell
-cp /root/demo-ncap/snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt ${NET_SNMP_HOME}/share/snmp/mibs/
+cp /root/demo-ncap/snmpd/mibs/IEEE-P1451-SIMPLE-DEMO-MIB.txt ${NET_SNMP_PREFIX}/share/snmp/mibs/
 ```
 
 Make sure that binaries of `net-snmp` can correctly find and load the file, by looking up one of your custom management information entries. In our example:
