@@ -8,6 +8,10 @@
 >
 > That being said, we are considering revising this repository, and making the code and docs generic as well as informational. Hopefully the revised contents can remain fresh and applicable over time.
 
+<!-- Review in terms of technical correctness in October 2022:
+
+* Not on a Raspberry Pi, but on an x86-64 VM. So some steps are skipped and remain unverified. -->
+
 ## 1. Prerequisites
 
 - A Raspberry Pi 3B or alternatively, a PC.
@@ -127,6 +131,10 @@ tar -zxvf net-snmp-5.7.3.tar.gz
 cd net-snmp-5.7.3
 ```
 
+<!-- Reviewed with a Git repository at commit 08d35a362f9e83c3ab5b6d430f2a892f3ec9bda2
+
+Consider converting this article from tarball-based to Git repo-based too? -->
+
 We denote the root directory of the source as `${NET_SNMP_SRC_ROOT}`.
 
 Start building the software:
@@ -172,9 +180,18 @@ make && make install
 
 Once the installation finishes, you should be able to run:
 
+<!-- We have shut down our test server for a while. Re-think about the organization of this article.
+
+* There *are* some public test servers on the Internet. But there's no guarantee of their availability nor how long they will be available. Just like ours...
+* Perhaps only put an `snmpget -V` here? -->
+
+<!-- It will only works after setting up a server following the instructions later in this article -->
+
 ```shell
-snmpget -v 2c -c public 106.14.14.168 1.3.6.1.2.1.1.1.0
+snmpget -v 2c -c public 127.0.0.1 1.3.6.1.2.1.1.1.0
 ```
+
+<!-- The output does not look so now. Instead, the default string similar to uname(1) output -->
 
 and you should see results similar to:
 
@@ -193,9 +210,16 @@ SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, S
 
 In order to get a group of variables all at once:
 
+<!-- It will only works after setting up a server following the instructions later in this article -->
+
 ```shell
-snmpwalk -v 2c -c public 106.14.14.168 1.3.6.1.2.1.1
+snmpwalk -v 2c -c public 127.0.0.1 1.3.6.1.2.1.1
 ```
+
+<!-- The output is not quite similar now
+
+1. sysDescr: see comment above
+2. sysName: your own hostname -->
 
 and you should see results similar to:
 
@@ -319,6 +343,8 @@ or view the latest log files:
 tail -f $(ls /root/demo-ncap/snmpd/logs/snmpd-log-* | sort | tail -n 1)         # snmpd's log
 tail -f $(ls /root/demo-ncap/snmpd/logs/snmpd-traffic-log-* | sort | tail -n 1) # tcpdump's log
 ```
+
+<!-- Review: skipped the part for systemd services -->
 
 ### 2.3 Custom MIBs
 
