@@ -7,3 +7,8 @@ root = true
 [*.txt]
 indent_style = tab
 tab_width = 8
+
+# Scripts
+[*.{awk,sh}]
+indent_style = space
+indent_size = 4
