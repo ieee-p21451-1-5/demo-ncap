@@ -131,7 +131,7 @@ tar -zxvf net-snmp-5.7.3.tar.gz
 cd net-snmp-5.7.3
 ```
 
-<!-- Reviewed with a Git repository at commit 08d35a362f9e83c3ab5b6d430f2a892f3ec9bda2
+<!-- Reviewed with a Git repository at commit 08d35a362f9e83c3ab5b6d430f2a892f3ec9bda2 (v5.9.1)
 
 Consider converting this article from tarball-based to Git repo-based too? -->
 
@@ -206,7 +206,7 @@ SNMPv2-MIB::sysDescr.0 = STRING: Greetings from IEEE P21451-1-5 Working Group, S
 > - `-v 2c` specifies the version of SNMP to use. Alternatives include `1`, `2c` and `3`.
 > - `-c public` sets the value of [community string](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol#Protocol_details) to "public", which is recognized by the SNMP server. Community strings introduce bare-bones authentication in SNMPv1 and SNMPv2.
 > - `106.14.14.168` specifies the destination of SNMP requests. An SNMP server maintained by IEEE P21451-1-5 working group listens to this address.
-> - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID as its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number, and different layers are separated by a period. Such a numeric way of displaying OID can be converted to a textual, human-readable equivalent. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for browsing the structure of commonly recognized OIDs can be found on [this site](http://www.oid-info.com/).
+> - `1.3.6.1.2.1.1.1.0` is the [OID](https://en.wikipedia.org/wiki/Object_identifier) of the content that is being asked for. SNMP uses OID as its naming scheme. OIDs are organized in a hierarchical way. Each layer is represented by a number, and different layers are separated by a period. Such a numeric way of displaying OID can be converted to a textual, human-readable equivalent. For example, `1.3.6.1.2.1.1.1.0` can be translated into `iso.identified-organization.dod.internet.mgmt.mib-2.system.sysDescr.0`. It implies that we were asking the server for its system description string. Besides `sysDescr`, several other variables (management information) related to common system management can be found under the node `system`. A nice tool for navigating the structure of commonly recognized OIDs can be found on [this site](http://www.oid-info.com/).
 
 In order to get a group of variables all at once:
 
